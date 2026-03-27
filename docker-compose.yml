@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: beiqi-postgres
+    environment:
+      POSTGRES_USER: beiqi
+      POSTGRES_PASSWORD: beiqi123
+      POSTGRES_DB: beiqi_mural
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

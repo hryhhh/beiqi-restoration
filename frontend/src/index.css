@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+/* 北齐壁蕴系统 —— 故宫宫廷风配色 */
+@theme {
+  --color-primary: #9C2F2F;
+  --color-primary-light: #B84A4A;
+  --color-primary-dark: #7A2222;
+  --color-gold: #C9A66B;
+  --color-gold-light: #D4AF87;
+  --color-gold-dark: #A8864E;
+  --color-bg-warm: #F8F4ED;
+  --color-bg-cream: #F0E9DF;
+  --color-bg-card: #FAF6F0;
+  --color-bg-gray: #F5F1EA;
+  --color-text-primary: #3F2E1E;
+  --color-text-secondary: #7A6B5D;
+  --color-text-light: #A89888;
+  --color-border-warm: #E8DFD2;
+}
+
+/* 全局平滑滚动 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ===== Hero 区动画 ===== */
+
+@keyframes heroFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes heroFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes goldGlow {
+  0%, 100% {
+    text-shadow: 0 0 8px rgba(201, 166, 107, 0.2), 0 0 24px rgba(201, 166, 107, 0.08);
+  }
+  50% {
+    text-shadow: 0 0 18px rgba(201, 166, 107, 0.5), 0 0 48px rgba(201, 166, 107, 0.15);
+  }
+}
+
+@keyframes arrowBreathe {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(10px); opacity: 0.8; }
+}
+
+/* ===== 视口进入动画 ===== */
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.animate-on-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 卡片依次进入的延迟 */
+.stagger-1 { transition-delay: 0.05s; }
+.stagger-2 { transition-delay: 0.1s; }
+.stagger-3 { transition-delay: 0.15s; }
+.stagger-4 { transition-delay: 0.2s; }
+.stagger-5 { transition-delay: 0.25s; }
+.stagger-6 { transition-delay: 0.3s; }
+
+/* ===== Hero 按钮 ===== */
+
+.hero-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 32px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: #fff;
+  background: linear-gradient(135deg, #9C2F2F, #B84A4A);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hero-btn-primary:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 28px rgba(156, 47, 47, 0.35);
+}
+
+.hero-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 32px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: #3F2E1E;
+  background: transparent;
+  border: 1.5px solid #C9A66B;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+.hero-btn-ghost:hover {
+  transform: scale(1.05);
+  background: rgba(201, 166, 107, 0.08);
+  box-shadow: 0 6px 28px rgba(201, 166, 107, 0.2);
+}
+
+/* ===== 功能卡片悬停 ===== */
+
+.feature-card {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+}
+.feature-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 12px 40px rgba(201, 166, 107, 0.15);
+}
+.feature-card:hover .feature-icon {
+  transform: scale(1.1) rotate(3deg);
+}
+.feature-icon {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}

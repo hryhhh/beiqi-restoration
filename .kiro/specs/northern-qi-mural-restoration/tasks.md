@@ -1,0 +1,335 @@
+# 实现计划
+
+- [ ] 1. 项目初始化与基础设施搭建
+  - [ ] 1.1 初始化根目录和前端项目
+    - 创建 `beiqi-mural-guardian/` 根目录，添加 `.gitignore`、`README.md`、根级 `Makefile`
+    - 使用 Vite 初始化 React + TypeScript 前端项目到 `frontend/`
+    - 安装核心依赖：React Router、Zustand、Ant Design、Tailwind CSS、axios、zod、OpenSeadragon
+    - 配置 Tailwind CSS 主题色（#8B2E2E 赭红主色）
+    - 创建基础目录结构（api/、components/、features/、hooks/、layouts/、pages/、router/、stores/、types/、utils/、constants/）
+    - _Requirements: 00.1, 0.4_
+  - [ ] 1.2 初始化后端项目
+    - 使用 Go modules 初始化后端项目到 `backend/`
+    - 安装核心依赖：Gin、GORM、PostgreSQL driver、JWT、Zap、validator.v10、viper
+    - 创建基础目录结构（cmd/、internal/、pkg/、migrations/、scripts/、test/、docs/）
+    - 实现配置加载（`internal/config/`）、统一响应格式（`pkg/response/`）、结构化日志（`pkg/logger/`）
+    - 编写 `Makefile`（build、run、test、migrate 命令）
+    - _Requirements: 0.1, 0.2_
+  - [ ] 1.3 配置数据库和 Docker 开发环境
+    - 编写 `docker-compose.yml`（PostgreSQL 服务）
+    - 实现 GORM 数据库连接和自动迁移
+    - 创建所有数据模型（`internal/model/`）：User、PasswordResetToken、Mural、MuralImage、DamageAnnotation、AnnotationSnapshot、Project、ProjectPhase、RestTask、TaskAttachment、RestorationPlan、PlanReview、PlanStatusChange、MaterialRecord、MuralHistory、KnowledgeDoc、AuditLog
+    - 创建领域模型（`internal/domain/`）和 DTO（`internal/dto/`）
+    - _Requirements: 0.6, 10.1_
+  - [ ] 1.4 定义前端 TypeScript 类型和常量
+    - 在 `types/` 下创建分模块类型文件（mural.ts、annotation.ts、project.ts、user.ts、knowledge.ts）
+    - 在 `constants/` 下定义病害类型枚举、修复阶段列表、用户角色枚举、壁画状态枚举
+    - _Requirements: 4.1, 5.1_
+
+- [ ] 2. 后端序列化与核心工具函数
+  - [ ] 2.1 实现壁画记录 JSON 序列化/反序列化
+    - 在 `internal/serializer/` 中实现壁画记录的 JSON 序列化和反序列化函数
+    - 实现 JSON Schema 校验，返回具体字段错误信息
+    - _Requirements: 10.1, 10.2, 10.4_
+  - [ ]* 2.2 编写属性测试：壁画记录 JSON 往返一致性
+    - **Property 1: 壁画记录 JSON 往返一致性**
+    - **Validates: Requirements 10.1, 10.2**
+  - [ ]* 2.3 编写属性测试：无效 JSON 数据校验
+    - **Property 4: 无效 JSON 数据校验**
+    - **Validates: Requirements 10.4**
+  - [ ] 2.4 实现病害标注文本格式化与解析
+    - 在 `internal/serializer/` 中实现标注数据到可读文本的格式化函数
+    - 实现可读文本到标注数据的解析函数
+    - 确保坐标精度保持四位小数
+    - _Requirements: 10.3, 10.5, 10.6_
+  - [ ]* 2.5 编写属性测试：标注数据文本格式往返一致性
+    - **Property 2: 标注数据文本格式往返一致性**
+    - **Validates: Requirements 10.5, 10.6**
+  - [ ]* 2.6 编写属性测试：标注坐标精度保持
+    - **Property 3: 标注坐标精度保持**
+    - **Validates: Requirements 10.3**
+  - [ ] 2.7 实现坐标裁剪和面积计算工具
+    - 在 `internal/util/` 或 `internal/domain/` 中实现坐标边界裁剪函数（裁剪到 [0,1] 范围）
+    - 实现多边形面积计算函数（Shoelace 公式）和面积百分比计算
+    - _Requirements: 4.6, 4.2_
+  - [ ]* 2.8 编写属性测试：坐标边界裁剪
+    - **Property 5: 坐标边界裁剪**
+    - **Validates: Requirements 4.6**
+  - [ ]* 2.9 编写属性测试：标注面积计算一致性
+    - **Property 6: 标注面积计算一致性**
+    - **Validates: Requirements 4.2**
+
+- [ ] 3. Checkpoint - 确保所有测试通过
+  - 确保所有测试通过，如有问题请询问用户。
+
+- [ ] 4. 用户认证与权限系统
+  - [ ] 4.1 实现后端认证模块
+    - 实现 JWT 工具（`pkg/jwt/`）：生成、验证、解析令牌
+    - 实现密码哈希工具（`pkg/hash/`）：bcrypt 加密和验证
+    - 实现认证 handler（`internal/handler/auth.go`）：登录、注册、密码重置
+    - 实现认证中间件（`internal/middleware/`）：JWT 验证、令牌过期处理
+    - 实现 RBAC 权限中间件：基于角色的访问控制
+    - _Requirements: 1.1, 1.2, 1.3, 1.7_
+  - [ ]* 4.2 编写属性测试：认证令牌有效性
+    - **Property 8: 认证令牌有效性**
+    - **Validates: Requirements 1.1, 1.3**
+  - [ ]* 4.3 编写属性测试：无效凭据拒绝
+    - **Property 9: 无效凭据拒绝**
+    - **Validates: Requirements 1.2**
+  - [ ]* 4.4 编写属性测试：角色权限映射正确性
+    - **Property 7: 角色权限映射正确性**
+    - **Validates: Requirements 1.4, 1.5, 1.6**
+  - [ ]* 4.5 编写属性测试：密码重置链接一次性
+    - **Property 10: 密码重置链接一次性**
+    - **Validates: Requirements 1.7**
+  - [ ] 4.6 实现前端认证模块
+    - 创建 axios 实例和请求/响应拦截器（401 跳转登录、令牌自动附加）
+    - 实现登录页面（`pages/auth/`）
+    - 实现 Zustand auth store（用户信息、令牌管理）
+    - 实现 `useAuth` hook
+    - 实现路由权限守卫（ProtectedRoute 组件）
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
+
+- [ ] 5. 前端布局与路由整合
+  - [ ] 5.1 实现页面布局和路由配置
+    - 创建 MainLayout（侧边栏 + 顶部导航 + 内容区）
+    - 创建 AuthLayout（登录/注册页面布局）
+    - 创建 AdminLayout（管理后台布局）
+    - 配置 React Router 路由表（所有页面路由）
+    - 实现基于角色的菜单动态显示（参照设计文档角色权限映射表）
+    - _Requirements: 1.4, 1.5, 1.6, 00.1_
+
+- [ ] 6. 前端序列化工具函数
+  - [ ] 6.1 实现前端序列化和坐标工具
+    - 在 `utils/formatter.ts` 中实现标注数据文本格式化和解析函数
+    - 在 `utils/imageUtils.ts` 中实现坐标裁剪和面积计算函数
+    - 在 `utils/validators.ts` 中实现 Zod schema 校验
+    - _Requirements: 10.3, 10.5, 10.6, 4.2, 4.6_
+  - [ ]* 6.2 编写前端属性测试：序列化往返和坐标工具
+    - 使用 fast-check 测试前端 formatter 的往返一致性
+    - 使用 fast-check 测试坐标裁剪和面积计算
+    - 使用 fast-check 测试坐标精度保持
+    - 使用 fast-check 测试无效 JSON 数据的 Zod 校验
+    - **Property 1: 壁画记录 JSON 往返一致性（前端）**
+    - **Property 2: 标注数据文本格式往返一致性（前端）**
+    - **Property 3: 标注坐标精度保持（前端）**
+    - **Property 4: 无效 JSON 数据校验（前端）**
+    - **Property 5: 坐标边界裁剪（前端）**
+    - **Property 6: 标注面积计算一致性（前端）**
+    - **Validates: Requirements 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 4.2, 4.6**
+
+- [ ] 7. Checkpoint - 确保所有测试通过
+  - 确保所有测试通过，如有问题请询问用户。
+
+- [ ] 8. 官网首页
+  - [ ] 8.1 实现后端公开接口
+    - 实现 `GET /api/public/landing` 接口，返回精选壁画和统计数据
+    - _Requirements: 00.1_
+  - [ ] 8.2 实现前端官网首页
+    - 创建 `pages/landing/` 页面组件
+    - 实现英雄区：全屏壁画背景 + 暗色叠加层 + 主标题「守护北齐千年壁画」+ 副标题 + Slogan + 双按钮
+    - 实现系统简介区：介绍文案 + 功能截图占位
+    - 实现核心功能亮点区：6 张卡片网格（壁画库管理、病害精准标注、修复项目全流程、修复前后对比、AI 图像分析、知识库与档案）
+    - 实现文化价值区：「守护千年 · 传承未来」+ 壁画图片
+    - 实现页脚：版权信息 + 版本号 + 友情链接
+    - 实现响应式布局适配
+    - _Requirements: 00.1, 00.2, 00.3, 00.4, 00.5, 00.6, 00.7_
+  - [ ] 8.3 实现顶部导航栏组件
+    - 创建 `components/layout/Header` 组件
+    - Logo + 中英文名称 + 导航菜单（根据角色动态显示）+ 用户头像/登录入口
+    - _Requirements: 00.1_
+
+- [ ] 9. 壁画库管理模块
+  - [ ] 9.1 实现后端壁画 CRUD API
+    - 实现壁画 repository（`internal/repository/`）
+    - 实现壁画 service（`internal/service/`）：创建、更新、列表查询（含筛选分页）、详情
+    - 实现壁画 handler（`internal/handler/mural.go`）：所有壁画相关 API 端点
+    - 实现壁画校验器（`internal/validator/`）：必填字段校验
+    - 实现修改历史记录逻辑
+    - _Requirements: 3.1, 3.3, 3.5, 3.6_
+  - [ ]* 9.2 编写属性测试：壁画记录创建与校验
+    - **Property 11: 壁画记录创建与校验**
+    - **Validates: Requirements 3.1, 3.6**
+  - [ ]* 9.3 编写属性测试：壁画筛选结果一致性
+    - **Property 12: 壁画筛选结果一致性**
+    - **Validates: Requirements 3.3**
+  - [ ]* 9.4 编写属性测试：壁画修改历史完整性
+    - **Property 13: 壁画修改历史完整性**
+    - **Validates: Requirements 3.5**
+  - [ ] 9.5 实现后端图像上传与处理
+    - 实现文件存储抽象（`pkg/storage/`）
+    - 实现图像处理（`pkg/imaging/`）：缩略图生成、WebP 转换、SHA-256 hash 计算
+    - 实现图像上传 handler
+    - _Requirements: 3.2, 0.3, 0.6_
+  - [ ]* 9.6 编写属性测试：图像上传 hash 一致性
+    - **Property 14: 图像上传 hash 一致性**
+    - **Validates: Requirements 3.2**
+  - [ ] 9.7 实现前端壁画库页面
+    - 创建壁画列表页（`pages/murals/`）：列表视图和卡片视图切换、筛选面板
+    - 创建壁画详情页：基本信息展示、图像库、修复历史时间线
+    - 创建壁画创建/编辑表单
+    - 创建批量导入界面：Excel 文件 + 图像文件夹选择、导入进度展示、错误反馈列表
+    - 实现 Zustand mural store 和 `useMural` hook
+    - _Requirements: 3.1, 3.3, 3.4, 3.5, 3.7, 3.8_
+
+- [ ] 10. 病害标注模块
+  - [ ] 10.1 实现后端标注 CRUD API
+    - 实现标注 repository 和 service
+    - 实现标注 handler（`internal/handler/annotation.go`）
+    - 集成坐标裁剪、面积计算和版本快照逻辑
+    - 支持多图层标注
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7_
+  - [ ]* 10.2 编写属性测试：标注版本快照完整性
+    - **Property 15: 标注版本快照完整性**
+    - **Validates: Requirements 4.4**
+  - [ ]* 10.3 编写属性测试：标注删除一致性
+    - **Property 16: 标注删除一致性**
+    - **Validates: Requirements 4.5**
+  - [ ]* 10.4 编写属性测试：多图层标注隔离
+    - **Property 17: 多图层标注隔离**
+    - **Validates: Requirements 4.7**
+  - [ ] 10.5 实现前端标注工具
+    - 创建 `components/annotation/AnnotationCanvas` 组件（OpenSeadragon 底层瓦片渲染 + Fabric.js 叠加层标注绘制，视口同步联动）
+    - 实现多边形、矩形、自由路径三种绘制模式
+    - 实现病害类型选择器和严重程度选择
+    - 实现标注列表侧边面板
+    - 实现多图层切换
+    - 实现离线缓存（IndexedDB 存储 + 网络恢复自动同步 + 版本冲突弹窗确认）
+    - 实现 `useAnnotation` hook
+    - _Requirements: 4.1, 4.2, 4.3, 4.7, 0.5, 0.7_
+
+- [ ] 11. Checkpoint - 确保所有测试通过
+
+- [ ] 12. 修复项目管理模块
+  - [ ] 12.1 实现后端项目管理 API
+    - 实现项目 repository 和 service
+    - 实现项目创建逻辑（自动初始化七阶段流程）
+    - 实现任务 CRUD、状态更新和进度重算逻辑
+    - 实现任务分配和附件上传
+    - 实现材料消耗记录和费用汇总
+    - 实现项目完成前置校验（未完成任务检查）
+    - 实现项目 handler（`internal/handler/project.go`）
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
+  - [ ]* 12.2 编写属性测试：项目创建初始化阶段
+    - **Property 18: 项目创建初始化阶段**
+    - **Validates: Requirements 5.1**
+  - [ ]* 12.3 编写属性测试：项目进度计算正确性
+    - **Property 19: 项目进度计算正确性**
+    - **Validates: Requirements 5.3**
+  - [ ]* 12.4 编写属性测试：项目完成前置校验
+    - **Property 20: 项目完成前置校验**
+    - **Validates: Requirements 5.6**
+  - [ ]* 12.5 编写属性测试：材料费用汇总一致性
+    - **Property 21: 材料费用汇总一致性**
+    - **Validates: Requirements 5.5**
+  - [ ] 12.6 实现前端项目管理页面
+    - 创建项目列表页（`pages/projects/`）：状态筛选、看板视图
+    - 创建项目详情页：修复流程阶段看板、任务列表、进度条、材料消耗记录
+    - 创建项目创建表单（关联壁画选择）
+    - 创建任务分配和附件上传组件
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.7_
+
+- [ ] 13. 修复方案与前后对比模块
+  - [ ] 13.1 实现后端修复方案 API
+    - 实现修复方案 repository 和 service
+    - 实现方案创建（校验病害标注存在性）、状态更新、审批逻辑
+    - 实现修复后图像上传和版本管理
+    - 实现修复方案 handler（`internal/handler/plan.go`）
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.8_
+  - [ ] 13.2 实现前端修复方案页面和对比组件
+    - 创建修复方案创建/编辑表单
+    - 创建审批流程界面（审核员视角）
+    - 创建 `components/comparison/ComparisonView` 组件
+    - 实现并排对比模式（同步缩放和平移）
+    - 实现滑块叠加对比模式
+    - 实现缺失图像占位提示
+    - 实现 `useImageCompare` hook
+    - _Requirements: 6.1, 6.3, 6.4, 6.5, 6.6, 6.7_
+
+- [ ] 14. 仪表盘模块
+  - [ ] 14.1 实现后端仪表盘数据 API
+    - 实现仪表盘 service：汇总待办任务数、进行中项目数、壁画总数
+    - 实现健康指数预警逻辑：筛选低于阈值的壁画
+    - 实现壁画状态分布和修复进度趋势数据聚合
+    - _Requirements: 2.1, 2.2, 2.4_
+  - [ ]* 14.2 编写属性测试：仪表盘汇总数据正确性
+    - **Property 22: 仪表盘汇总数据正确性**
+    - **Validates: Requirements 2.1**
+  - [ ]* 14.3 编写属性测试：健康指数预警正确性
+    - **Property 23: 健康指数预警正确性**
+    - **Validates: Requirements 2.2**
+  - [ ] 14.4 实现前端仪表盘页面
+    - 创建仪表盘页面（`pages/dashboard/`）
+    - 实现汇总数据卡片（待办任务、进行中项目、壁画总数）
+    - 实现健康指数预警区域
+    - 实现 ECharts 图表（壁画状态分布饼图、修复进度趋势折线图）
+    - 实现项目卡片点击导航
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+- [ ] 15. Checkpoint - 确保所有测试通过
+  - 确保所有测试通过，如有问题请询问用户。
+
+- [ ] 16. 图像分析工具模块
+  - [ ] 16.1 实现后端图像分析 API
+    - 实现 AI 检测服务接口抽象（`internal/ports/`）
+    - 实现检测结果转标注逻辑
+    - 实现修复报告生成逻辑
+    - 实现 AI 服务不可用时的降级处理
+    - 实现分析 handler（`internal/handler/analysis.go`）
+    - _Requirements: 7.1, 7.3, 7.4, 7.5_
+  - [ ]* 16.2 编写属性测试：AI 检测结果转标注一致性
+    - **Property 28: AI 检测结果转标注一致性**
+    - **Validates: Requirements 7.3**
+  - [ ]* 16.3 编写属性测试：修复报告内容完整性
+    - **Property 29: 修复报告内容完整性**
+    - **Validates: Requirements 7.4**
+  - [ ] 16.4 实现前端图像分析页面
+    - 创建图像分析页面（`pages/analysis/`）
+    - 实现图像上传和 AI 检测结果展示（高亮病害区域、置信度标注）
+    - 实现检测结果确认转标注功能
+    - 实现修复报告生成和下载
+    - 实现 AI 服务不可用时的手动标注降级提示
+    - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
+
+- [ ] 17. 知识库与文档中心模块
+  - [ ] 17.1 实现后端知识库 API
+    - 实现知识库 repository 和 service
+    - 实现分类浏览、关键词搜索、文档上传和详情查询
+    - 实现知识库 handler（`internal/handler/knowledge.go`）
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+  - [ ]* 17.2 编写属性测试：知识库分类筛选一致性
+    - **Property 26: 知识库分类筛选一致性**
+    - **Validates: Requirements 8.1**
+  - [ ]* 17.3 编写属性测试：知识库搜索结果相关性
+    - **Property 27: 知识库搜索结果相关性**
+    - **Validates: Requirements 8.2**
+  - [ ] 17.4 实现前端知识库页面
+    - 创建知识库页面（`pages/knowledge/`）
+    - 实现分类浏览（标准流程、材料手册、案例库、法规文件）
+    - 实现搜索功能
+    - 实现文档详情在线阅读（Markdown 渲染）
+    - 实现管理员文档上传功能
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+
+- [ ] 18. 管理后台模块
+  - [ ] 18.1 实现后端管理 API
+    - 实现用户管理 service：用户列表、角色修改
+    - 实现审计日志中间件和查询 service
+    - 实现数据备份和导出逻辑
+    - 实现管理 handler（`internal/handler/admin.go`）
+    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
+  - [ ]* 18.2 编写属性测试：操作日志时间排序
+    - **Property 24: 操作日志时间排序**
+    - **Validates: Requirements 9.3**
+  - [ ]* 18.3 编写属性测试：用户角色变更即时生效
+    - **Property 25: 用户角色变更即时生效**
+    - **Validates: Requirements 9.2**
+  - [ ] 18.4 实现前端管理后台页面
+    - 创建管理后台页面（`pages/admin/`）
+    - 实现用户列表和角色修改界面
+    - 实现操作日志查看（按用户、操作类型筛选）
+    - 实现数据备份触发和导出功能
+    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
+
+- [ ] 19. 最终 Checkpoint - 确保所有测试通过
+  - 确保所有测试通过，如有问题请询问用户。
