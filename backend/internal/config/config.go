@@ -13,6 +13,13 @@ type Config struct {
 	JWT      JWTConfig
 	Upload   UploadConfig
 	Log      LogConfig
+	LLM      LLMConfig
+}
+
+type LLMConfig struct {
+	BaseURL string // OpenAI 兼容 API 地址
+	APIKey  string
+	Model   string
 }
 
 type ServerConfig struct {
@@ -78,6 +85,11 @@ func Load() *Config {
 		Log: LogConfig{
 			Level: getEnv("LOG_LEVEL", "debug"),
 			File:  getEnv("LOG_FILE", ""),
+		},
+		LLM: LLMConfig{
+			BaseURL: getEnv("LLM_BASE_URL", ""),
+			APIKey:  getEnv("LLM_API_KEY", ""),
+			Model:   getEnv("LLM_MODEL", "gpt-4o-mini"),
 		},
 	}
 }

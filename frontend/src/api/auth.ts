@@ -1,5 +1,5 @@
-import { post } from './request';
-import type { LoginRequest, LoginResponse } from '@/types';
+import { get, post } from './request';
+import type { LoginRequest, LoginResponse, User } from '@/types';
 
 /** 用户登录 */
 export const login = (data: LoginRequest) => post<LoginResponse>('/auth/login', data);
@@ -13,5 +13,8 @@ export const resetPassword = (email: string) =>
   post<void>('/auth/reset-password', { email });
 
 /** 确认密码重置 */
-export const confirmResetPassword = (data: { token: string; password: string }) =>
+export const confirmResetPassword = (data: { token: string; newPassword: string }) =>
   post<void>('/auth/reset-password/confirm', data);
+
+/** 获取当前登录用户 */
+export const getCurrentUser = () => get<User>('/auth/me');

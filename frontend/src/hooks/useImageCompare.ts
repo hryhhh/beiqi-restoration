@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 
 interface UseImageCompareOptions {
   /** 修复前图像 URL */
@@ -39,27 +39,62 @@ interface UseImageCompareReturn {
 
 /** 修复前后对比 hook：管理缩放、平移同步和缺失图像检测 */
 export function useImageCompare({ beforeSrc, afterSrc }: UseImageCompareOptions): UseImageCompareReturn {
+  const sourceKey = `${beforeSrc ?? ''}::${afterSrc ?? ''}`;
   const [mode, setMode] = useState<'side' | 'slider'>('slider');
-  const [zoom, setZoom] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [viewState, setViewState] = useState<{
+    sourceKey: string;
+    zoom: number;
+    offset: { x: number; y: number };
+  }>({
+    sourceKey,
+    zoom: 1,
+    offset: { x: 0, y: 0 },
+  });
   const dragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
+
+  const normalizedState = viewState.sourceKey === sourceKey
+    ? viewState
+    : {
+        sourceKey,
+        zoom: 1,
+        offset: { x: 0, y: 0 },
+      };
 
   const missingBefore = !beforeSrc;
   const missingAfter = !afterSrc;
 
   const handleZoom = useCallback((delta: number) => {
-    setZoom((z) => Math.max(0.5, Math.min(5, z + delta)));
-  }, []);
+    setViewState((prev) => {
+      const base = prev.sourceKey === sourceKey
+        ? prev
+        : { sourceKey, zoom: 1, offset: { x: 0, y: 0 } };
+      return {
+        ...base,
+        zoom: Math.max(0.5, Math.min(5, base.zoom + delta)),
+      };
+    });
+  }, [sourceKey]);
 
   const handlePan = useCallback((dx: number, dy: number) => {
-    setOffset((o) => ({ x: o.x + dx, y: o.y + dy }));
-  }, []);
+    setViewState((prev) => {
+      const base = prev.sourceKey === sourceKey
+        ? prev
+        : { sourceKey, zoom: 1, offset: { x: 0, y: 0 } };
+      return {
+        ...base,
+        offset: { x: base.offset.x + dx, y: base.offset.y + dy },
+      };
+    });
+  }, [sourceKey]);
 
   const reset = useCallback(() => {
-    setZoom(1);
-    setOffset({ x: 0, y: 0 });
-  }, []);
+    setViewState({
+      sourceKey,
+      zoom: 1,
+      offset: { x: 0, y: 0 },
+    });
+  }, [sourceKey]);
 
   const onWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -81,12 +116,9 @@ export function useImageCompare({ beforeSrc, afterSrc }: UseImageCompareOptions)
     dragging.current = false;
   }, []);
 
-  // 切换图像时重置视图
-  useEffect(() => { reset(); }, [beforeSrc, afterSrc, reset]);
-
   return {
     beforeSrc, afterSrc, missingBefore, missingAfter,
-    mode, setMode, zoom, offset,
+    mode, setMode, zoom: normalizedState.zoom, offset: normalizedState.offset,
     handleZoom, handlePan, reset,
     onWheel, onMouseDown, onMouseMove, onMouseUp,
   };

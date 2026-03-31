@@ -19,20 +19,19 @@ func NewProjectHandler(svc *service.ProjectService, db *gorm.DB) *ProjectHandler
 	return &ProjectHandler{svc: svc, db: db}
 }
 
-type createProjectReq struct {
-	Name        string   `json:"name" binding:"required"`
-	Description *string  `json:"description"`
-	MuralIDs    []string `json:"muralIds"`
-}
-
 // Create 创建项目
 func (h *ProjectHandler) Create(c *gin.Context) {
-	var req createProjectReq
+	var req struct {
+		Name        string   `json:"name" binding:"required"`
+		Description *string  `json:"description"`
+		Budget      *float64 `json:"budget"`
+		MuralIDs    []string `json:"muralIds"`
+	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "请求参数无效")
 		return
 	}
-	p := &model.Project{Name: req.Name, Description: req.Description}
+	p := &model.Project{Name: req.Name, Description: req.Description, Budget: req.Budget}
 	if err := h.svc.Create(p, req.MuralIDs); err != nil {
 		response.ServerError(c)
 		return
@@ -192,4 +191,57 @@ func (h *ProjectHandler) AddMaterial(c *gin.Context) {
 		return
 	}
 	response.Created(c, m)
+}
+
+// Update 编辑项目基本信息
+func (h *ProjectHandler) Update(c *gin.Context) {
+	var req struct {
+		Name        *string  `json:"name"`
+		Description *string  `json:"description"`
+		Budget      *float64 `json:"budget"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请求参数无效")
+		return
+	}
+	updates := make(map[string]interface{})
+	if req.Name != nil {
+		updates["name"] = *req.Name
+	}
+	if req.Description != nil {
+		updates["description"] = *req.Description
+	}
+	if req.Budget != nil {
+		updates["budget"] = *req.Budget
+	}
+	if len(updates) == 0 {
+		response.BadRequest(c, "无更新字段")
+		return
+	}
+	if err := h.db.Model(&model.Project{}).Where("id = ?", c.Param("id")).Updates(updates).Error; err != nil {
+		response.NotFound(c, "项目")
+		return
+	}
+	p, _ := h.svc.GetByID(c.Param("id"))
+	response.OK(c, p)
+}
+
+// Delete 删除项目（级联删除阶段、任务、材料）
+func (h *ProjectHandler) Delete(c *gin.Context) {
+	id := c.Param("id")
+	var p model.Project
+	if err := h.db.First(&p, "id = ?", id).Error; err != nil {
+		response.NotFound(c, "项目")
+		return
+	}
+	// 级联删除
+	h.db.Where("project_id = ?", id).Delete(&model.MaterialRecord{})
+	var phases []model.ProjectPhase
+	h.db.Where("project_id = ?", id).Find(&phases)
+	for _, ph := range phases {
+		h.db.Where("phase_id = ?", ph.ID).Delete(&model.RestTask{})
+	}
+	h.db.Where("project_id = ?", id).Delete(&model.ProjectPhase{})
+	h.db.Delete(&p)
+	response.OK(c, nil)
 }

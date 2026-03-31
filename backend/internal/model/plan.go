@@ -29,6 +29,9 @@ type RestorationPlan struct {
 	Method         string     `gorm:"not null" json:"method"`
 	Materials      string     `gorm:"not null" json:"materials"`
 	ExpectedResult *string    `json:"expectedResult"`
+	BeforeImage    *string    `json:"beforeImage"`    // 修复前图像路径
+	AfterImage     *string    `json:"afterImage"`     // 修复后图像路径
+	AfterVersion   int        `gorm:"default:0" json:"afterVersion"` // 修复后图像版本号
 	Status         PlanStatus `gorm:"type:varchar(20);default:'draft'" json:"status"`
 	CreatedAt      time.Time  `json:"createdAt"`
 	UpdatedAt      time.Time  `json:"updatedAt"`

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Form, Input, Select, InputNumber, message } from 'antd';
+import { Modal, Form, Input, Select, message } from 'antd';
 import { createMural, updateMural } from '@/api/mural';
 import { MURAL_STATUS_MAP } from '@/constants';
 import type { MuralRecord } from '@/types';

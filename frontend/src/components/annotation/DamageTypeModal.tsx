@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Form, Select, InputNumber, Input } from 'antd';
+import { Modal, Form, Select, Input } from 'antd';
 import { DAMAGE_TYPE_MAP, SEVERITY_OPTIONS } from '@/constants';
 import type { DamageType } from '@/types';
 

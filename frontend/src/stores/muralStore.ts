@@ -40,7 +40,9 @@ export const useMuralStore = create<MuralState>((set, getState) => ({
     set({ loading: true });
     try {
       const res = await muralApi.getMurals(getState().params);
-      set({ murals: res.data, total: res.total });
+      set({ murals: res.data || [], total: res.total || 0 });
+    } catch {
+      set({ murals: [], total: 0 });
     } finally {
       set({ loading: false });
     }

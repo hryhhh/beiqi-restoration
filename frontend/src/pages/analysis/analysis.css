@@ -1,0 +1,431 @@
+/* ===== 图像分析页面 —— 北齐壁画文化风格 ===== */
+
+/* 页面容器 */
+.analysis-page {
+  position: relative;
+  min-height: calc(100vh - 56px);
+  background-color: rgba(248, 245, 240, 0.6);
+  padding: clamp(16px, 2.5vh, 32px) clamp(16px, 3vw, 40px);
+  overflow: hidden;
+}
+
+/* ===== 文化背景装饰层 ===== */
+.analysis-bg-decor {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  /* 左侧莲花与云纹光晕 */
+  background:
+    radial-gradient(ellipse 500px 600px at 5% 70%, rgba(201,166,107,0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 400px 400px at 8% 30%, rgba(139,58,47,0.06) 0%, transparent 60%),
+    /* 右侧飞天仙子光晕 */
+    radial-gradient(ellipse 500px 500px at 92% 40%, rgba(201,166,107,0.08) 0%, transparent 65%),
+    radial-gradient(ellipse 350px 450px at 95% 75%, rgba(139,58,47,0.05) 0%, transparent 60%);
+  /* 叠加 SVG 文化纹样 */
+  background-image:
+    /* 左侧莲花 */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800' viewBox='0 0 600 800' fill='none'%3E%3C!-- 莲花 --%3E%3Cellipse cx='80' cy='580' rx='60' ry='30' stroke='%23C9A66B' stroke-width='0.8' opacity='0.12' fill='none'/%3E%3Cellipse cx='80' cy='580' rx='40' ry='20' stroke='%23C9A66B' stroke-width='0.6' opacity='0.10' fill='none'/%3E%3Cpath d='M80 550 Q60 520 80 490 Q100 520 80 550Z' stroke='%23C9A66B' stroke-width='0.7' opacity='0.10' fill='none'/%3E%3Cpath d='M80 550 Q50 530 55 500 Q75 515 80 550Z' stroke='%23C9A66B' stroke-width='0.6' opacity='0.09' fill='none'/%3E%3Cpath d='M80 550 Q110 530 105 500 Q85 515 80 550Z' stroke='%23C9A66B' stroke-width='0.6' opacity='0.09' fill='none'/%3E%3Cpath d='M80 550 Q40 540 35 510 Q65 520 80 550Z' stroke='%23C9A66B' stroke-width='0.5' opacity='0.08' fill='none'/%3E%3Cpath d='M80 550 Q120 540 125 510 Q95 520 80 550Z' stroke='%23C9A66B' stroke-width='0.5' opacity='0.08' fill='none'/%3E%3C!-- 云纹 --%3E%3Cpath d='M30 350 Q60 310 100 325 Q80 290 115 270 Q150 250 170 280 Q195 250 225 270 Q190 285 200 315 Q230 305 245 335 Q215 345 185 330 Q150 355 90 340Z' stroke='%23C9A66B' stroke-width='0.7' opacity='0.10' fill='none'/%3E%3Cpath d='M50 450 Q75 425 105 435 Q90 410 115 395 Q140 410 130 435 Q120 440 105 438Z' stroke='%23C9A66B' stroke-width='0.5' opacity='0.08' fill='none'/%3E%3Cpath d='M20 250 Q45 225 75 235 Q60 210 85 195 Q110 210 100 235 Q90 240 75 238Z' stroke='%23C9A66B' stroke-width='0.5' opacity='0.07' fill='none'/%3E%3C/svg%3E"),
+    /* 右侧飞天仙子与飘带 */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800' viewBox='0 0 600 800' fill='none'%3E%3C!-- 飞天仙子轮廓 --%3E%3Cpath d='M520 280 Q510 260 515 240 Q525 220 535 230 Q540 245 530 260 Q525 270 520 280Z' stroke='%23C9A66B' stroke-width='0.8' opacity='0.10' fill='none'/%3E%3C!-- 身体 --%3E%3Cpath d='M520 280 Q505 310 500 350 Q498 380 510 400 Q520 380 525 350 Q530 310 520 280Z' stroke='%23C9A66B' stroke-width='0.7' opacity='0.09' fill='none'/%3E%3C!-- 飘带左 --%3E%3Cpath d='M505 300 Q470 280 440 290 Q410 310 380 300 Q350 285 330 300' stroke='%23C9A66B' stroke-width='0.6' opacity='0.08' fill='none'/%3E%3C!-- 飘带右 --%3E%3Cpath d='M535 300 Q560 280 580 295 Q600 315 590 340' stroke='%23C9A66B' stroke-width='0.6' opacity='0.08' fill='none'/%3E%3C!-- 祥云 --%3E%3Cpath d='M450 500 Q475 475 505 485 Q490 460 515 445 Q540 460 530 485 Q520 490 505 488Z' stroke='%23C9A66B' stroke-width='0.5' opacity='0.08' fill='none'/%3E%3Cpath d='M530 600 Q550 580 575 588 Q565 568 582 558 Q600 568 592 588 Q585 592 575 590Z' stroke='%23C9A66B' stroke-width='0.5' opacity='0.07' fill='none'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse 500px 600px at 5% 70%, rgba(201,166,107,0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 400px 400px at 8% 30%, rgba(139,58,47,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 500px 500px at 92% 40%, rgba(201,166,107,0.08) 0%, transparent 65%),
+    radial-gradient(ellipse 350px 450px at 95% 75%, rgba(139,58,47,0.05) 0%, transparent 60%);
+  background-position: left center, right center;
+  background-repeat: no-repeat;
+}
+
+
+/* ===== 页面标题 ===== */
+.analysis-page-title {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #8B3A2F;
+  margin-bottom: clamp(16px, 2vh, 24px);
+}
+
+/* ===== AI 功能提示卡片 ===== */
+.analysis-tip-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  margin-bottom: clamp(20px, 2.5vh, 32px);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(218,235,250,0.45) 0%, rgba(212,175,135,0.25) 100%);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid rgba(201,166,107,0.25);
+  box-shadow:
+    0 4px 20px rgba(63,46,30,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+.analysis-tip-icon {
+  font-size: 20px;
+  color: #8B3A2F;
+  flex-shrink: 0;
+}
+
+.analysis-tip-content {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 14px;
+  color: #3F2E1E;
+  line-height: 1.6;
+}
+
+.analysis-tip-title {
+  font-weight: 700;
+  color: #8B3A2F;
+}
+
+.analysis-tip-sep {
+  color: #A89888;
+  margin: 0 2px;
+}
+
+.analysis-tip-desc {
+  color: #5A4A3A;
+}
+
+.analysis-tip-line {
+  position: absolute;
+  bottom: 0;
+  left: 24px;
+  right: 24px;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, #C9A66B, transparent);
+  opacity: 0.4;
+  border-radius: 1px;
+}
+
+/* ===== 主内容区左右分栏 ===== */
+.analysis-main-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(16px, 2vw, 28px);
+  align-items: stretch;
+}
+
+@media (max-width: 960px) {
+  .analysis-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== 玻璃拟态卡片 ===== */
+.analysis-glass-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border-radius: 16px;
+  border: 1px solid rgba(232,223,210,0.6);
+  padding: clamp(18px, 2.5vh, 28px) clamp(18px, 2.5vw, 28px);
+  box-shadow:
+    0 8px 32px rgba(63,46,30,0.06),
+    0 2px 8px rgba(63,46,30,0.03),
+    inset 0 1px 0 rgba(255,255,255,0.7);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.analysis-glass-card:hover {
+  box-shadow:
+    0 12px 40px rgba(63,46,30,0.09),
+    0 4px 12px rgba(201,166,107,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.7);
+  border-color: rgba(201,166,107,0.4);
+}
+
+.analysis-card-title {
+  font-size: clamp(16px, 2vh, 20px);
+  font-weight: 700;
+  color: #3F2E1E;
+  margin-bottom: clamp(12px, 1.5vh, 18px);
+  letter-spacing: 1px;
+}
+
+/* ===== 上传区域 ===== */
+.analysis-upload-zone {
+  position: relative;
+  border-radius: 12px;
+  border: 2px dashed rgba(201,166,107,0.4);
+  background: rgba(250,247,242,0.5);
+  min-height: 280px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.analysis-upload-zone:hover {
+  border-color: rgba(201,166,107,0.7);
+  background: rgba(250,247,242,0.8);
+}
+
+.analysis-preview-img {
+  width: 100%;
+  height: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.analysis-upload-placeholder {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  width: 100%;
+  z-index: 1;
+}
+
+/* 上传区淡化文化背景图案 */
+.analysis-upload-bg-pattern {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300' fill='none'%3E%3Cpath d='M200 80 Q180 50 200 20 Q220 50 200 80Z' stroke='%238B3A2F' stroke-width='1.5' fill='none'/%3E%3Cpath d='M200 80 Q170 60 175 30 Q195 45 200 80Z' stroke='%238B3A2F' stroke-width='1.2' fill='none'/%3E%3Cpath d='M200 80 Q230 60 225 30 Q205 45 200 80Z' stroke='%238B3A2F' stroke-width='1.2' fill='none'/%3E%3Cellipse cx='200' cy='95' rx='50' ry='18' stroke='%238B3A2F' stroke-width='1' fill='none'/%3E%3Cpath d='M80 200 Q110 170 150 180 Q130 155 160 140 Q190 155 175 180 Q165 185 150 183Z' stroke='%23C9A66B' stroke-width='1' fill='none'/%3E%3Cpath d='M280 220 Q300 195 325 205 Q315 185 335 175 Q355 185 345 205 Q338 210 325 208Z' stroke='%23C9A66B' stroke-width='1' fill='none'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.analysis-upload-icon-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(201,166,107,0.15), rgba(201,166,107,0.08));
+  border: 2px solid rgba(201,166,107,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.analysis-upload-zone:hover .analysis-upload-icon-wrapper {
+  transform: scale(1.08);
+  border-color: rgba(201,166,107,0.6);
+}
+
+.analysis-upload-icon {
+  font-size: 28px;
+  color: #C9A66B;
+}
+
+.analysis-upload-text {
+  position: relative;
+  z-index: 1;
+  font-size: 14px;
+  color: #7A6B5D;
+  letter-spacing: 0.5px;
+}
+
+/* ===== 卡片底部按钮区 ===== */
+.analysis-card-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: clamp(14px, 1.8vh, 20px);
+}
+
+.analysis-card-actions-three {
+  justify-content: center;
+}
+
+/* 深红渐变主按钮 */
+.analysis-btn-primary {
+  height: 40px !important;
+  padding: 0 24px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  letter-spacing: 1px !important;
+  color: #fff !important;
+  background: linear-gradient(135deg, #B5564A, #C4706A) !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(181,86,74,0.25) !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease !important;
+}
+
+.analysis-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 24px rgba(181,86,74,0.35) !important;
+  filter: brightness(1.06) !important;
+}
+
+.analysis-btn-primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.98) !important;
+}
+
+.analysis-btn-primary:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* 浅色描边辅助按钮 */
+.analysis-btn-outline {
+  height: 40px !important;
+  padding: 0 20px !important;
+  border-radius: 10px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  color: #5A4A3A !important;
+  background: rgba(255,255,255,0.6) !important;
+  border: 1.5px solid #E8DFD2 !important;
+  transition: border-color 0.25s ease, background 0.25s ease, color 0.25s ease !important;
+}
+
+.analysis-btn-outline:hover:not(:disabled) {
+  border-color: #C9A66B !important;
+  background: rgba(201,166,107,0.08) !important;
+  color: #B5564A !important;
+}
+
+.analysis-btn-outline:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+}
+
+/* ===== 检测结果区 ===== */
+.analysis-result-zone {
+  position: relative;
+  border-radius: 12px;
+  background: rgba(250,247,242,0.4);
+  min-height: 280px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.analysis-result-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #7A6B5D;
+  text-align: center;
+  font-size: 14px;
+}
+
+.analysis-result-empty-icon {
+  font-size: 40px;
+  color: #C9A66B;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.analysis-result-empty-sub {
+  font-size: 12px;
+  color: #A89888;
+  margin-top: 8px;
+}
+
+/* 检测结果图像容器 */
+.analysis-result-image-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.analysis-result-img {
+  width: 100%;
+  max-height: 340px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* 病害检测框 */
+.analysis-detection-box {
+  position: absolute;
+  border: 2.5px solid;
+  border-radius: 4px;
+  transition: opacity 0.3s ease;
+}
+
+.analysis-detection-label {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* ===== 底部文化装饰 ===== */
+.analysis-bottom-decor {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='120' viewBox='0 0 1200 120' fill='none'%3E%3C!-- 底部莲花 --%3E%3Cellipse cx='200' cy='100' rx='45' ry='18' stroke='%23C9A66B' stroke-width='0.6' opacity='0.08' fill='none'/%3E%3Cpath d='M200 82 Q185 60 200 40 Q215 60 200 82Z' stroke='%23C9A66B' stroke-width='0.5' opacity='0.07' fill='none'/%3E%3Cpath d='M200 82 Q175 68 180 48 Q195 58 200 82Z' stroke='%23C9A66B' stroke-width='0.5' opacity='0.06' fill='none'/%3E%3Cpath d='M200 82 Q225 68 220 48 Q205 58 200 82Z' stroke='%23C9A66B' stroke-width='0.5' opacity='0.06' fill='none'/%3E%3C!-- 底部云纹 --%3E%3Cpath d='M900 95 Q920 75 945 82 Q935 65 955 55 Q975 65 965 82 Q958 87 945 85Z' stroke='%23C9A66B' stroke-width='0.5' opacity='0.07' fill='none'/%3E%3Cpath d='M1050 100 Q1065 85 1085 90 Q1078 78 1092 70 Q1105 78 1098 90 Q1092 93 1085 92Z' stroke='%23C9A66B' stroke-width='0.4' opacity='0.06' fill='none'/%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: bottom center;
+  background-repeat: no-repeat;
+  opacity: 0.8;
+}
+
+/* ===== 页面进入动画 ===== */
+.analysis-page-title,
+.analysis-tip-card,
+.analysis-glass-card {
+  animation: analysisSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.analysis-tip-card {
+  animation-delay: 0.1s;
+}
+
+.analysis-glass-card:nth-child(1) {
+  animation-delay: 0.2s;
+}
+
+.analysis-glass-card:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+@keyframes analysisSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Spin, Button, Tag, Tabs, Empty, message, Progress, Card, List, Popconfirm,
@@ -38,13 +38,13 @@ export default function ProjectDetailPage() {
   const [taskForm] = Form.useForm();
   const [materialForm] = Form.useForm();
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try { setProject(await getProject(id)); }
     catch { message.error('加载项目失败'); }
     finally { setLoading(false); }
-  };
+  }, [id]);
 
   // 加载用户列表（用于任务分配）
   const loadUsers = async () => {
@@ -52,7 +52,7 @@ export default function ProjectDetailPage() {
     try { setUsers(await getUsers()); } catch { /* 非管理员可能无权限 */ }
   };
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   if (loading) return <div className="flex justify-center py-20"><Spin size="large" /></div>;
   if (!project) return <Empty description="项目不存在" />;
@@ -123,14 +123,14 @@ export default function ProjectDetailPage() {
   const totalCost = project.materials?.reduce((sum, m) => sum + (m.cost || 0), 0) || 0;
 
   return (
-    <div>
+    <div className="page-container">
       {/* 顶部 */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/projects')} />
-          <h2 className="text-xl font-bold m-0">{project.name}</h2>
+          <h2 className="page-title m-0">{project.name}</h2>
           <Tag color={statusColor[project.status]}>{PROJECT_STATUS_MAP[project.status]}</Tag>
-          <Progress percent={project.progress} size="small" className="!w-32 !m-0" />
+          <Progress percent={project.progress} size="small" className="w-32! m-0!" />
         </div>
         {project.status !== 'completed' && (
           <Popconfirm title="确定标记项目为已完成？" onConfirm={handleComplete}>
@@ -152,7 +152,6 @@ export default function ProjectDetailPage() {
                   key={phase.id}
                   phase={phase}
                   index={idx}
-                  projectId={id!}
                   onTaskStatusChange={handleTaskStatusChange}
                   onAddTask={() => { setTaskPhaseId(phase.id); setTaskModalOpen(true); }}
                   onAssignTask={openAssignModal}
@@ -211,13 +210,13 @@ export default function ProjectDetailPage() {
           </Form.Item>
           <div className="grid grid-cols-3 gap-3">
             <Form.Item name="quantity" label="数量" rules={[{ required: true }]}>
-              <InputNumber min={0} className="!w-full" />
+              <InputNumber min={0} className="w-full!" />
             </Form.Item>
             <Form.Item name="unit" label="单位" rules={[{ required: true }]}>
               <Input placeholder="ml" />
             </Form.Item>
             <Form.Item name="cost" label="费用（元）">
-              <InputNumber min={0} className="!w-full" />
+              <InputNumber min={0} className="w-full!" />
             </Form.Item>
           </div>
         </Form>
@@ -238,8 +237,8 @@ export default function ProjectDetailPage() {
 }
 
 /** 阶段卡片组件 */
-function PhaseCard({ phase, index, projectId, onTaskStatusChange, onAddTask, onAssignTask, onUploadAttachment }: {
-  phase: ProjectPhase; index: number; projectId: string;
+function PhaseCard({ phase, index, onTaskStatusChange, onAddTask, onAssignTask, onUploadAttachment }: {
+  phase: ProjectPhase; index: number;
   onTaskStatusChange: (taskId: string, status: string) => void;
   onAddTask: () => void;
   onAssignTask: (task: RestTask) => void;
@@ -286,11 +285,11 @@ function PhaseCard({ phase, index, projectId, onTaskStatusChange, onAddTask, onA
                 <span className="truncate">{task.title}</span>
                 {/* 已分配人员标签 */}
                 {task.assignees?.map((u) => (
-                  <Tag key={u.id} icon={<UserOutlined />} className="!text-xs">{u.username}</Tag>
+                  <Tag key={u.id} icon={<UserOutlined />} className="text-xs!">{u.username}</Tag>
                 ))}
                 {/* 附件数量 */}
                 {(task.attachments?.length ?? 0) > 0 && (
-                  <Tag icon={<PaperClipOutlined />} className="!text-xs">{task.attachments!.length}</Tag>
+                  <Tag icon={<PaperClipOutlined />} className="text-xs!">{task.attachments!.length}</Tag>
                 )}
               </div>
             </List.Item>

@@ -1,5 +1,72 @@
 import { useEffect, useRef } from 'react';
 
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  size: number;
+  opacity: number;
+  fadeDir: number;
+  trail: { x: number; y: number }[];
+}
+
+function createParticle(w: number, h: number): Particle {
+  return {
+    x: Math.random() * w,
+    y: Math.random() * h,
+    vx: (Math.random() - 0.5) * 0.25,
+    vy: (Math.random() - 0.5) * 0.25,
+    size: Math.random() * 1.5 + 0.8,
+    opacity: Math.random() * 0.4 + 0.15,
+    fadeDir: Math.random() > 0.5 ? 1 : -1,
+    trail: [],
+  };
+}
+
+function updateParticle(p: Particle, w: number, h: number) {
+  p.opacity += p.fadeDir * 0.002;
+  if (p.opacity > 0.55) p.fadeDir = -1;
+  if (p.opacity < 0.08) p.fadeDir = 1;
+  p.x += p.vx;
+  p.y += p.vy;
+  if (p.x < 0 || p.x > w) p.vx *= -1;
+  if (p.y < 0 || p.y > h) p.vy *= -1;
+  p.trail.push({ x: p.x, y: p.y });
+  if (p.trail.length > 18) p.trail.shift();
+}
+
+function drawParticle(p: Particle, ctx: CanvasRenderingContext2D) {
+  // 光绘轨迹
+  if (p.trail.length > 2) {
+    ctx.beginPath();
+    ctx.moveTo(p.trail[0].x, p.trail[0].y);
+    for (let i = 1; i < p.trail.length; i++) {
+      ctx.lineTo(p.trail[i].x, p.trail[i].y);
+    }
+    ctx.strokeStyle = `rgba(201, 166, 107, ${p.opacity * 0.12})`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+  // 发光晕
+  const g = ctx.createRadialGradient(
+    p.x, p.y, 0,
+    p.x, p.y, p.size * 5,
+  );
+  g.addColorStop(0, `rgba(201, 166, 107, ${p.opacity * 0.7})`);
+  g.addColorStop(0.3, `rgba(201, 166, 107, ${p.opacity * 0.25})`);
+  g.addColorStop(1, 'rgba(201, 166, 107, 0)');
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, p.size * 5, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  // 核心亮点
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, p.size * 0.6, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(212, 175, 135, ${p.opacity * 0.85})`;
+  ctx.fill();
+}
+
 /**
  * AI 修复粒子动画（明亮版）
  * 暖金色发光粒子 + 柔和光绘线条，在浅色背景上优雅流动
@@ -16,71 +83,6 @@ export default function HeroParticles() {
     let animId: number;
     let particles: Particle[] = [];
 
-    class Particle {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      size: number;
-      opacity: number;
-      fadeDir: number;
-      trail: { x: number; y: number }[];
-
-      constructor(w: number, h: number) {
-        this.x = Math.random() * w;
-        this.y = Math.random() * h;
-        this.vx = (Math.random() - 0.5) * 0.25;
-        this.vy = (Math.random() - 0.5) * 0.25;
-        this.size = Math.random() * 1.5 + 0.8;
-        this.opacity = Math.random() * 0.4 + 0.15;
-        this.fadeDir = Math.random() > 0.5 ? 1 : -1;
-        this.trail = [];
-      }
-
-      update(w: number, h: number) {
-        this.opacity += this.fadeDir * 0.002;
-        if (this.opacity > 0.55) this.fadeDir = -1;
-        if (this.opacity < 0.08) this.fadeDir = 1;
-        this.x += this.vx;
-        this.y += this.vy;
-        if (this.x < 0 || this.x > w) this.vx *= -1;
-        if (this.y < 0 || this.y > h) this.vy *= -1;
-        this.trail.push({ x: this.x, y: this.y });
-        if (this.trail.length > 18) this.trail.shift();
-      }
-
-      draw(ctx: CanvasRenderingContext2D) {
-        // 光绘轨迹
-        if (this.trail.length > 2) {
-          ctx.beginPath();
-          ctx.moveTo(this.trail[0].x, this.trail[0].y);
-          for (let i = 1; i < this.trail.length; i++) {
-            ctx.lineTo(this.trail[i].x, this.trail[i].y);
-          }
-          ctx.strokeStyle = `rgba(201, 166, 107, ${this.opacity * 0.12})`;
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
-        }
-        // 发光晕
-        const g = ctx.createRadialGradient(
-          this.x, this.y, 0,
-          this.x, this.y, this.size * 5,
-        );
-        g.addColorStop(0, `rgba(201, 166, 107, ${this.opacity * 0.7})`);
-        g.addColorStop(0.3, `rgba(201, 166, 107, ${this.opacity * 0.25})`);
-        g.addColorStop(1, 'rgba(201, 166, 107, 0)');
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size * 5, 0, Math.PI * 2);
-        ctx.fillStyle = g;
-        ctx.fill();
-        // 核心亮点
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size * 0.6, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(212, 175, 135, ${this.opacity * 0.85})`;
-        ctx.fill();
-      }
-    }
-
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
       canvas.width = canvas.offsetWidth * dpr;
@@ -95,7 +97,7 @@ export default function HeroParticles() {
       const count = Math.floor((w * h) / 30000);
       particles = Array.from(
         { length: Math.min(count, 35) },
-        () => new Particle(w, h),
+        () => createParticle(w, h),
       );
     };
 
@@ -104,8 +106,8 @@ export default function HeroParticles() {
       const h = canvas.offsetHeight;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const p of particles) {
-        p.update(w, h);
-        p.draw(ctx);
+        updateParticle(p, w, h);
+        drawParticle(p, ctx);
       }
       animId = requestAnimationFrame(animate);
     };

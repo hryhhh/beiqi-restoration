@@ -1,16 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  Card, Table, Tag, Button, Modal, Form, Input, Select, Empty, Spin, message, Tabs,
+  Card, Table, Tag, Button, Modal, Form, Input, Select, Spin, message, Tabs,
+  Popconfirm,
 } from 'antd';
 import {
   PlusOutlined, CheckCircleOutlined, CloseCircleOutlined, EyeOutlined,
+  SearchOutlined, SolutionOutlined, FileDoneOutlined, FileTextOutlined,
+  ArrowUpOutlined, DeleteOutlined, AuditOutlined, PlayCircleOutlined,
 } from '@ant-design/icons';
-import { getPlans, getPlan, createPlan, updatePlanStatus, reviewPlan } from '@/api/plan';
+import { getPlans, getPlan, createPlan, updatePlanStatus, reviewPlan, deletePlan } from '@/api/plan';
+import { getMurals, getMural } from '@/api/mural';
 import { PLAN_STATUS_MAP } from '@/constants';
+import { MOCK_PLANS } from '@/mock';
 import { useAuthStore } from '@/stores/authStore';
 import ComparisonView from '@/components/comparison/ComparisonView';
 import type { RestorationPlan, PlanStatus } from '@/types';
+import type { MuralRecord } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
 
 const statusColor: Record<PlanStatus, string> = {
@@ -25,21 +31,50 @@ export default function PlanPage() {
 
   const [plans, setPlans] = useState<RestorationPlan[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isMock, setIsMock] = useState(false);
+  const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [detailPlan, setDetailPlan] = useState<RestorationPlan | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewPlanId, setReviewPlanId] = useState('');
+  const [compareMural, setCompareMural] = useState<MuralRecord | null>(null);
+  const [muralOptions, setMuralOptions] = useState<{ value: string; label: string }[]>([]);
   const [form] = Form.useForm();
   const [reviewForm] = Form.useForm();
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
-    try { setPlans(await getPlans(annotationId) || []); }
-    catch { message.error('加载方案列表失败'); }
-    finally { setLoading(false); }
-  };
+    try {
+      const res = (await getPlans(annotationId)) || [];
+      if (res.length > 0) { setPlans(res); setIsMock(false); }
+      else { setPlans(MOCK_PLANS); setIsMock(true); }
+    } catch {
+      setPlans(MOCK_PLANS); setIsMock(true);
+    } finally { setLoading(false); }
+  }, [annotationId]);
 
-  useEffect(() => { load(); }, [annotationId]);
+  useEffect(() => { load(); }, [load]);
+
+  // 加载壁画选项（用于对比图选择）
+  useEffect(() => {
+    getMurals({ pageSize: 200 }).then((res) => {
+      setMuralOptions((res.data || []).map((m) => ({ value: m.id, label: `${m.name}（${m.site}）` })));
+    }).catch(() => {});
+  }, []);
+
+  /* 统计 */
+  const stats = useMemo(() => {
+    const pending = plans.filter((p) => p.status === 'pending').length;
+    const approved = plans.filter((p) => p.status === 'approved').length;
+    return { pending, approved, total: plans.length };
+  }, [plans]);
+
+  /* 搜索过滤 */
+  const filtered = useMemo(() => {
+    if (!search.trim()) return plans;
+    const q = search.trim().toLowerCase();
+    return plans.filter((p) => p.method.toLowerCase().includes(q) || p.materials.toLowerCase().includes(q));
+  }, [plans, search]);
 
   const handleCreate = async () => {
     const values = await form.validateFields();
@@ -52,9 +87,9 @@ export default function PlanPage() {
     } catch { message.error('创建失败，请确认病害标注存在'); }
   };
 
-  const handleStatusChange = async (id: string, status: string) => {
+  const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      await updatePlanStatus(id, status);
+      await updatePlanStatus(id, newStatus);
       message.success('状态已更新');
       load();
       if (detailPlan?.id === id) openDetail(id);
@@ -77,62 +112,104 @@ export default function PlanPage() {
     catch { message.error('加载方案详情失败'); }
   };
 
-  const openReview = (id: string) => {
-    setReviewPlanId(id);
-    setReviewOpen(true);
-  };
-
   const isReviewer = user?.role === 'reviewer';
 
   const columns: ColumnsType<RestorationPlan> = [
     { title: '修复方法', dataIndex: 'method', key: 'method', ellipsis: true },
     { title: '使用材料', dataIndex: 'materials', key: 'materials', ellipsis: true },
-    { title: '状态', dataIndex: 'status', key: 'status', width: 100,
+    { title: '状态', dataIndex: 'status', key: 'status', width: 100, sorter: (a, b) => a.status.localeCompare(b.status),
       render: (s: PlanStatus) => <Tag color={statusColor[s]}>{PLAN_STATUS_MAP[s]}</Tag>,
     },
-    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 180,
+    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 180, sorter: (a, b) => a.createdAt.localeCompare(b.createdAt),
       render: (v: string) => new Date(v).toLocaleString('zh-CN'),
     },
-    { title: '操作', key: 'action', width: 200,
+    { title: '操作', key: 'action', width: 140, align: 'center' as const,
       render: (_, r) => (
-        <div className="flex gap-1">
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => openDetail(r.id)}>
-            详情
-          </Button>
+        <div className="flex items-center justify-center gap-1">
+          <Button type="text" size="small" icon={<EyeOutlined />} title="详情" onClick={() => openDetail(r.id)} />
           {isReviewer && r.status === 'pending' && (
-            <Button type="link" size="small" onClick={() => openReview(r.id)}>审批</Button>
+            <Button type="text" size="small" icon={<AuditOutlined />} title="审批" onClick={() => { setReviewPlanId(r.id); setReviewOpen(true); }} />
           )}
           {r.status === 'approved' && (
-            <Button type="link" size="small" onClick={() => handleStatusChange(r.id, 'in_progress')}>
-              开始执行
-            </Button>
+            <Button type="text" size="small" icon={<PlayCircleOutlined />} title="开始执行" onClick={() => handleStatusChange(r.id, 'in_progress')} />
           )}
           {r.status === 'in_progress' && (
-            <Button type="link" size="small" onClick={() => handleStatusChange(r.id, 'completed')}>
-              标记完成
-            </Button>
+            <Button type="text" size="small" icon={<CheckCircleOutlined />} title="标记完成" onClick={() => handleStatusChange(r.id, 'completed')} />
           )}
+          <Popconfirm title="确定删除该方案？" onConfirm={async () => {
+            try { await deletePlan(r.id); message.success('方案已删除'); load(); }
+            catch { message.error('删除失败'); }
+          }}>
+            <Button type="text" size="small" danger icon={<DeleteOutlined />} title="删除" />
+          </Popconfirm>
         </div>
       ),
     },
   ];
 
+  const statCards = [
+    { label: '待审收方案', value: `${stats.pending} 个`, icon: <SolutionOutlined />, cls: 'kpi-card-tasks' },
+    { label: '已通过方案', value: `${stats.approved} 个`, icon: <FileDoneOutlined />, cls: 'kpi-card-projects' },
+    { label: '总方案数', value: `${stats.total} 个`, icon: <FileTextOutlined />, cls: 'kpi-card-murals' },
+  ];
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold m-0">修复方案</h2>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-          新建方案
-        </Button>
+    <div className="page-container w-full h-full flex flex-col">
+      {/* 标题行 */}
+      <div className="flex items-center justify-between mb-[clamp(8px,1.2vh,16px)] flex-wrap gap-2 shrink-0">
+        <div className="flex items-center gap-3">
+          <h2 className="page-title m-0">修复方案</h2>
+          {isMock && <Tag color="warning" className="text-xs">演示数据</Tag>}
+        </div>
+        <div className="flex items-center gap-3">
+          <Input
+            placeholder="按修复方法或材料搜索"
+            prefix={<SearchOutlined className="text-text-light" />}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            allowClear
+            className="w-64!"
+          />
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setCreateOpen(true)}
+            style={{ background: 'linear-gradient(135deg, #7A2222, #9C2F2F)', border: 'none' }}
+          >
+            新建方案
+          </Button>
+        </div>
       </div>
 
-      <Spin spinning={loading}>
-        {plans.length ? (
-          <Table rowKey="id" columns={columns} dataSource={plans} pagination={false} />
-        ) : (
-          <Empty description="暂无修复方案" />
-        )}
-      </Spin>
+      {/* 统计卡片 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-[clamp(8px,1vw,16px)] mb-[clamp(10px,1.5vh,20px)] shrink-0">
+        {statCards.map((c) => (
+          <div key={c.label} className={`kpi-card ${c.cls}`}>
+            <div className="kpi-icon-box">{c.icon}</div>
+            <div className="kpi-content">
+              <div className="kpi-label">{c.label}</div>
+              <div className="kpi-value text-[clamp(20px,3vh,32px)]!">{c.value}</div>
+            </div>
+            <ArrowUpOutlined className="text-text-light text-xs ml-auto" />
+          </div>
+        ))}
+      </div>
+
+      {/* 表格 */}
+      <div className="flex-1 min-h-0">
+        <Spin spinning={loading}>
+          <div className="dashboard-card">
+            <Table
+              rowKey="id"
+              columns={columns}
+              dataSource={filtered}
+              pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+              size="middle"
+              className="project-table"
+            />
+          </div>
+        </Spin>
+      </div>
 
       {/* 创建方案弹窗 */}
       <Modal title="新建修复方案" open={createOpen} onOk={handleCreate}
@@ -155,15 +232,12 @@ export default function PlanPage() {
       </Modal>
 
       {/* 方案详情弹窗 */}
-      <Modal
-        title="方案详情" open={!!detailPlan} onCancel={() => setDetailPlan(null)}
-        footer={null} width={800} destroyOnClose
-      >
+      <Modal title="方案详情" open={!!detailPlan} onCancel={() => setDetailPlan(null)}
+        footer={null} width={800} destroyOnClose>
         {detailPlan && (
           <Tabs items={[
             {
-              key: 'info',
-              label: '方案信息',
+              key: 'info', label: '方案信息',
               children: (
                 <div className="space-y-4">
                   <Card size="small" title="基本信息">
@@ -178,8 +252,6 @@ export default function PlanPage() {
                       )}
                     </div>
                   </Card>
-
-                  {/* 审批记录 */}
                   {detailPlan.reviews?.length ? (
                     <Card size="small" title="审批记录">
                       {detailPlan.reviews.map((r) => (
@@ -200,18 +272,12 @@ export default function PlanPage() {
                       ))}
                     </Card>
                   ) : null}
-
-                  {/* 状态变更历史 */}
                   {detailPlan.statusChanges?.length ? (
                     <Card size="small" title="状态变更">
                       {detailPlan.statusChanges.map((sc) => (
                         <div key={sc.id} className="text-sm mb-1">
-                          <Tag>{PLAN_STATUS_MAP[sc.fromStatus]}</Tag>
-                          →
-                          <Tag>{PLAN_STATUS_MAP[sc.toStatus]}</Tag>
-                          <span className="text-xs text-text-secondary ml-2">
-                            {new Date(sc.changedAt).toLocaleString('zh-CN')}
-                          </span>
+                          <Tag>{PLAN_STATUS_MAP[sc.fromStatus]}</Tag> → <Tag>{PLAN_STATUS_MAP[sc.toStatus]}</Tag>
+                          <span className="text-xs text-text-secondary ml-2">{new Date(sc.changedAt).toLocaleString('zh-CN')}</span>
                         </div>
                       ))}
                     </Card>
@@ -220,14 +286,23 @@ export default function PlanPage() {
               ),
             },
             {
-              key: 'compare',
-              label: '修复对比',
+              key: 'compare', label: '修复对比',
               children: (
-                <ComparisonView
-                  /* 实际使用时从壁画图像中获取修复前后图 */
-                  beforeSrc={undefined}
-                  afterSrc={undefined}
-                />
+                <div>
+                  <Select
+                    showSearch allowClear placeholder="选择壁画查看修复对比" className="w-72! mb-3"
+                    options={muralOptions}
+                    filterOption={(input, opt) => (opt?.label as string)?.toLowerCase().includes(input.toLowerCase()) ?? false}
+                    onChange={async (id) => {
+                      if (!id) { setCompareMural(null); return; }
+                      try { setCompareMural(await getMural(id)); } catch { message.error('加载壁画失败'); }
+                    }}
+                  />
+                  <ComparisonView
+                    beforeSrc={compareMural?.images?.find((img) => img.imageType === 'visible')?.filePath}
+                    afterSrc={compareMural?.images?.find((img) => img.imageType === 'restored')?.filePath}
+                  />
+                </div>
               ),
             },
           ]} />
@@ -239,13 +314,10 @@ export default function PlanPage() {
         onCancel={() => setReviewOpen(false)} destroyOnClose>
         <Form form={reviewForm} layout="vertical" className="mt-4">
           <Form.Item name="result" label="审批结果" rules={[{ required: true, message: '请选择审批结果' }]}>
-            <Select
-              placeholder="选择审批结果"
-              options={[
-                { value: 'approved', label: '✅ 通过' },
-                { value: 'rejected', label: '❌ 驳回' },
-              ]}
-            />
+            <Select placeholder="选择审批结果" options={[
+              { value: 'approved', label: '✅ 通过' },
+              { value: 'rejected', label: '❌ 驳回' },
+            ]} />
           </Form.Item>
           <Form.Item name="comment" label="审批意见">
             <Input.TextArea rows={3} placeholder="审批意见（可选）" />

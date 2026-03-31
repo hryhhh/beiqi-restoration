@@ -37,6 +37,9 @@ func main() {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
+	// 静态文件服务：上传的图片可通过 /uploads/xxx 访问
+	r.Static("/uploads", cfg.Upload.Dir)
+
 	// 公开接口
 	publicHandler := handler.NewPublicHandler(db)
 	r.GET("/api/public/landing", publicHandler.Landing)
@@ -53,7 +56,8 @@ func main() {
 
 	// 需要认证的路由
 	api := r.Group("/api")
-	api.Use(middleware.JWTAuth(jm))
+	api.Use(middleware.JWTAuth(jm), middleware.AuditLog(db))
+	api.GET("/auth/me", authHandler.Me)
 
 	// 壁画模块
 	muralRepo := repository.NewMuralRepository(db)
@@ -70,6 +74,7 @@ func main() {
 		murals.POST("", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), muralHandler.Create)
 		murals.PUT("/:id", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), muralHandler.Update)
 		murals.POST("/:id/images", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), imageHandler.Upload)
+		murals.POST("/import", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), muralHandler.BatchImport)
 	}
 
 	// 标注模块
@@ -95,6 +100,8 @@ func main() {
 		projects.GET("", projectHandler.List)
 		projects.GET("/:id", projectHandler.GetByID)
 		projects.POST("", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), projectHandler.Create)
+		projects.PUT("/:id", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), projectHandler.Update)
+		projects.DELETE("/:id", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), projectHandler.Delete)
 		projects.PUT("/:id/complete", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), projectHandler.Complete)
 		projects.POST("/:id/tasks", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), projectHandler.CreateTask)
 		projects.PUT("/:id/tasks/:taskId", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer, model.RoleAssistant, model.RoleResearcher), projectHandler.UpdateTask)
@@ -104,7 +111,7 @@ func main() {
 	}
 
 	// 修复方案模块
-	planHandler := handler.NewPlanHandler(db)
+	planHandler := handler.NewPlanHandler(db, store)
 	plans := api.Group("/plans")
 	{
 		plans.GET("", planHandler.List)
@@ -112,6 +119,9 @@ func main() {
 		plans.POST("", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer, model.RoleAssistant, model.RoleResearcher), planHandler.Create)
 		plans.PUT("/:id", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer, model.RoleAssistant, model.RoleResearcher), planHandler.UpdateStatus)
 		plans.POST("/:id/review", middleware.RequireRoles(model.RoleReviewer), planHandler.Review)
+		plans.PUT("/:id/content", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer, model.RoleAssistant, model.RoleResearcher), planHandler.UpdateContent)
+		plans.DELETE("/:id", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), planHandler.Delete)
+		plans.POST("/:id/image", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer, model.RoleAssistant), planHandler.UploadImage)
 	}
 
 	// 仪表盘模块
@@ -124,7 +134,7 @@ func main() {
 	}
 
 	// 图像分析模块
-	analysisHandler := handler.NewAnalysisHandler()
+	analysisHandler := handler.NewAnalysisHandler(db, nil) // AI 服务暂未对接，传 nil 降级为手动标注
 	analysis := api.Group("/analysis")
 	{
 		analysis.POST("/detect", analysisHandler.Detect)
@@ -133,17 +143,23 @@ func main() {
 	}
 
 	// 知识库模块
-	knowledgeHandler := handler.NewKnowledgeHandler(db)
+	knowledgeRepo := repository.NewKnowledgeRepository(db)
+	knowledgeSvc := service.NewKnowledgeService(knowledgeRepo)
+	knowledgeQASvc := service.NewKnowledgeQAService(knowledgeRepo, &cfg.LLM)
+	knowledgeHandler := handler.NewKnowledgeHandler(knowledgeSvc, knowledgeQASvc)
 	knowledge := api.Group("/knowledge")
 	{
 		knowledge.GET("", knowledgeHandler.List)
 		knowledge.GET("/search", knowledgeHandler.Search)
+		knowledge.POST("/qa", knowledgeHandler.Ask)
 		knowledge.GET("/:id", knowledgeHandler.GetByID)
 		knowledge.POST("", middleware.RequireRoles(model.RoleAdmin), knowledgeHandler.Create)
+		knowledge.PUT("/:id", middleware.RequireRoles(model.RoleAdmin), knowledgeHandler.Update)
+		knowledge.DELETE("/:id", middleware.RequireRoles(model.RoleAdmin), knowledgeHandler.Delete)
 	}
 
 	// 管理后台模块
-	adminHandler := handler.NewAdminHandler(db)
+	adminHandler := handler.NewAdminHandler(db, &cfg.Database)
 	admin := api.Group("/admin").Use(middleware.RequireRoles(model.RoleAdmin))
 	{
 		admin.GET("/users", adminHandler.ListUsers)
@@ -151,6 +167,8 @@ func main() {
 		admin.GET("/logs", adminHandler.ListLogs)
 		admin.POST("/backup", adminHandler.Backup)
 		admin.POST("/export", adminHandler.Export)
+		admin.PUT("/users/:id/reset-password", adminHandler.ResetUserPassword)
+		admin.DELETE("/users/:id", adminHandler.DeleteUser)
 	}
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)

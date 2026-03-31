@@ -1,4 +1,4 @@
-import { get, post } from './request';
+import { get, post, put, del } from './request';
 import type { KnowledgeDoc } from '@/types';
 import type { PaginatedResponse } from '@/types';
 
@@ -15,3 +15,19 @@ export const getKnowledgeDoc = (id: string) => get<KnowledgeDoc>(`/knowledge/${i
 /** 创建文档（管理员） */
 export const createKnowledgeDoc = (data: { title: string; content: string; category: string }) =>
   post<KnowledgeDoc>('/knowledge', data);
+
+/** 更新文档（管理员） */
+export const updateKnowledgeDoc = (id: string, data: { title: string; content: string; category: string }) =>
+  put<KnowledgeDoc>(`/knowledge/${id}`, data);
+
+/** 删除文档（管理员） */
+export const deleteKnowledgeDoc = (id: string) => del<null>(`/knowledge/${id}`);
+
+/** 知识库问答 */
+export interface QAResult {
+  answer: string;
+  sources: { id: string; title: string; category: string }[];
+}
+
+export const askKnowledge = (question: string) =>
+  post<QAResult>('/knowledge/qa', { question });

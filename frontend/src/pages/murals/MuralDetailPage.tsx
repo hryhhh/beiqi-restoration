@@ -28,7 +28,7 @@ export default function MuralDetailPage() {
 
   const anno = useAnnotation(id || '');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
@@ -40,9 +40,9 @@ export default function MuralDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   if (loading) return <div className="flex justify-center py-20"><Spin size="large" /></div>;
   if (!mural) return <Empty description="壁画不存在" />;
@@ -53,12 +53,12 @@ export default function MuralDetailPage() {
   };
 
   return (
-    <div>
+    <div className="page-container">
       {/* 顶部 */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/murals')} />
-          <h2 className="text-xl font-bold m-0">{mural.name}</h2>
+          <h2 className="page-title m-0">{mural.name}</h2>
           <Tag color={statusColor[mural.status]}>{MURAL_STATUS_MAP[mural.status]}</Tag>
         </div>
         <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>编辑</Button>
@@ -94,7 +94,7 @@ export default function MuralDetailPage() {
                 <Select
                   value={uploadType}
                   onChange={setUploadType}
-                  className="!w-28"
+                  className="w-28!"
                   options={Object.entries(IMAGE_TYPE_MAP).map(([v, l]) => ({ value: v, label: l }))}
                 />
                 <Upload
@@ -122,7 +122,7 @@ export default function MuralDetailPage() {
                         <Image
                           src={`/api/uploads/${img.filePath}`}
                           alt={`${mural.name} - ${IMAGE_TYPE_MAP[img.imageType]}`}
-                          className="!h-40 object-cover"
+                          className="h-40! object-cover"
                           width="100%"
                         />
                         <div className="p-2 text-xs text-text-secondary">
@@ -170,6 +170,7 @@ export default function MuralDetailPage() {
                   标注列表（{anno.annotations.length}）
                 </div>
                 <AnnotationPanel
+                  muralId={id!}
                   annotations={anno.annotations}
                   loading={anno.loading}
                   selectedId={anno.selected}

@@ -40,3 +40,8 @@ func (s *LocalStorage) Save(subDir, filename string, r io.Reader) (string, error
 func (s *LocalStorage) FullPath(relPath string) string {
 	return filepath.Join(s.baseDir, relPath)
 }
+
+// BaseDir 返回存储根目录
+func (s *LocalStorage) BaseDir() string {
+	return s.baseDir
+}

@@ -1,4 +1,4 @@
-import { get, post, put } from './request';
+import { get, post, put, del } from './request';
 import type { RestorationPlan, PlanReview } from '@/types';
 
 /** 获取方案列表 */
@@ -16,6 +16,13 @@ export const createPlan = (data: {
 /** 更新方案状态 */
 export const updatePlanStatus = (id: string, status: string) =>
   put<RestorationPlan>(`/plans/${id}`, { status });
+
+/** 编辑方案内容 */
+export const updatePlanContent = (id: string, data: { method?: string; materials?: string; expectedResult?: string }) =>
+  put<RestorationPlan>(`/plans/${id}/content`, data);
+
+/** 删除方案 */
+export const deletePlan = (id: string) => del<void>(`/plans/${id}`);
 
 /** 审批方案 */
 export const reviewPlan = (id: string, data: { result: 'approved' | 'rejected'; comment?: string }) =>

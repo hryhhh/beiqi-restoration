@@ -1,4 +1,4 @@
-import { get, post, put } from './request';
+import { get, post, put, del } from './request';
 import type { Project, MaterialRecord, TaskAttachment } from '@/types';
 import type { PaginatedResponse } from '@/types';
 
@@ -10,8 +10,15 @@ export const getProjects = (params?: { status?: string; page?: number; pageSize?
 export const getProject = (id: string) => get<Project>(`/projects/${id}`);
 
 /** 创建项目 */
-export const createProject = (data: { name: string; description?: string; muralIds?: string[] }) =>
+export const createProject = (data: { name: string; description?: string; budget?: number; muralIds?: string[] }) =>
   post<Project>('/projects', data);
+
+/** 编辑项目 */
+export const updateProject = (id: string, data: { name?: string; description?: string; budget?: number }) =>
+  put<Project>(`/projects/${id}`, data);
+
+/** 删除项目 */
+export const deleteProject = (id: string) => del<void>(`/projects/${id}`);
 
 /** 标记项目完成 */
 export const completeProject = (id: string) => put<void>(`/projects/${id}/complete`);

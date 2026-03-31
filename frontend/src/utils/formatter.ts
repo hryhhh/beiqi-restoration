@@ -1,5 +1,4 @@
-import type { DamageAnnotation, AnnotationCoordinates, DamageType } from '@/types';
-import type { ImageType } from '@/types';
+import type { DamageAnnotation, AnnotationCoordinates } from '@/types';
 
 /** 格式化用的标注文本结构 */
 export interface AnnotationText {

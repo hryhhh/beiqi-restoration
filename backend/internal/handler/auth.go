@@ -15,12 +15,38 @@ import (
 )
 
 type AuthHandler struct {
-	db *gorm.DB
-	jm *pkgjwt.Manager
+	db                 *gorm.DB
+	jm                 *pkgjwt.Manager
+	findUserByID       func(id string) (*model.User, error)
+	findResetTokenByID func(token string) (*model.PasswordResetToken, error)
+	applyPasswordReset func(resetToken *model.PasswordResetToken, hashedPassword string) error
 }
 
 func NewAuthHandler(db *gorm.DB, jm *pkgjwt.Manager) *AuthHandler {
-	return &AuthHandler{db: db, jm: jm}
+	h := &AuthHandler{db: db, jm: jm}
+	h.findUserByID = func(id string) (*model.User, error) {
+		var user model.User
+		if err := h.db.Where("id = ?", id).First(&user).Error; err != nil {
+			return nil, err
+		}
+		return &user, nil
+	}
+	h.findResetTokenByID = func(token string) (*model.PasswordResetToken, error) {
+		var resetToken model.PasswordResetToken
+		if err := h.db.Where("token = ?", token).First(&resetToken).Error; err != nil {
+			return nil, err
+		}
+		return &resetToken, nil
+	}
+	h.applyPasswordReset = func(resetToken *model.PasswordResetToken, hashedPassword string) error {
+		return h.db.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Model(&model.User{}).Where("id = ?", resetToken.UserID).Update("password", hashedPassword).Error; err != nil {
+				return err
+			}
+			return tx.Model(resetToken).Update("used", true).Error
+		})
+	}
+	return h
 }
 
 type loginReq struct {
@@ -40,7 +66,8 @@ type resetPasswordReq struct {
 
 type confirmResetReq struct {
 	Token       string `json:"token" binding:"required"`
-	NewPassword string `json:"newPassword" binding:"required,min=6"`
+	NewPassword string `json:"newPassword"`
+	Password    string `json:"password"` // 兼容旧前端字段
 }
 
 // Login 用户登录
@@ -74,7 +101,35 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"user": gin.H{
 			"id": user.ID, "username": user.Username,
 			"email": user.Email, "role": user.Role, "avatar": user.Avatar,
+			"createdAt": user.CreatedAt, "updatedAt": user.UpdatedAt,
 		},
+	})
+}
+
+// Me 获取当前登录用户信息
+func (h *AuthHandler) Me(c *gin.Context) {
+	userIDVal, exists := c.Get("userId")
+	if !exists {
+		response.Unauthorized(c, "缺少用户信息")
+		return
+	}
+
+	userID, ok := userIDVal.(string)
+	if !ok || userID == "" {
+		response.Unauthorized(c, "用户信息无效")
+		return
+	}
+
+	user, err := h.findUserByID(userID)
+	if err != nil {
+		response.Unauthorized(c, "用户不存在")
+		return
+	}
+
+	response.OK(c, gin.H{
+		"id": user.ID, "username": user.Username,
+		"email": user.Email, "role": user.Role, "avatar": user.Avatar,
+		"createdAt": user.CreatedAt, "updatedAt": user.UpdatedAt,
 	})
 }
 
@@ -160,8 +215,17 @@ func (h *AuthHandler) ConfirmResetPassword(c *gin.Context) {
 		return
 	}
 
-	var resetToken model.PasswordResetToken
-	if err := h.db.Where("token = ?", req.Token).First(&resetToken).Error; err != nil {
+	newPassword := req.NewPassword
+	if newPassword == "" {
+		newPassword = req.Password
+	}
+	if len(newPassword) < 6 {
+		response.BadRequest(c, "请求参数无效")
+		return
+	}
+
+	resetToken, err := h.findResetTokenByID(req.Token)
+	if err != nil {
 		response.BadRequest(c, "重置令牌无效")
 		return
 	}
@@ -176,20 +240,13 @@ func (h *AuthHandler) ConfirmResetPassword(c *gin.Context) {
 		return
 	}
 
-	hashed, err := hash.Password(req.NewPassword)
+	hashed, err := hash.Password(newPassword)
 	if err != nil {
 		response.ServerError(c)
 		return
 	}
 
-	// 事务：更新密码 + 标记令牌已使用
-	err = h.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&model.User{}).Where("id = ?", resetToken.UserID).Update("password", hashed).Error; err != nil {
-			return err
-		}
-		return tx.Model(&resetToken).Update("used", true).Error
-	})
-	if err != nil {
+	if err := h.applyPasswordReset(resetToken, hashed); err != nil {
 		response.ServerError(c)
 		return
 	}

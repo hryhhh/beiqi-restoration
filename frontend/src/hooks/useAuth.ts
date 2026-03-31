@@ -6,7 +6,7 @@ import * as authApi from '@/api/auth';
 import type { LoginRequest } from '@/types';
 
 export function useAuth() {
-  const { user, token, setAuth, logout: clearAuth } = useAuthStore();
+  const { user, token, initialized, setAuth, logout: clearAuth } = useAuthStore();
   const navigate = useNavigate();
 
   const login = useCallback(async (data: LoginRequest) => {
@@ -24,7 +24,8 @@ export function useAuth() {
   return {
     user,
     token,
-    isAuthenticated: !!token,
+    initialized,
+    isAuthenticated: !!token && !!user,
     login,
     logout,
   };

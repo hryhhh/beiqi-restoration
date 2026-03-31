@@ -85,6 +85,13 @@ export const router = createBrowserRouter([
               return { Component: C };
             },
           },
+          {
+            path: '/knowledge/chat',
+            lazy: async () => {
+              const { default: C } = await import('@/pages/knowledge/KnowledgeChatPage');
+              return { Component: C };
+            },
+          },
         ],
       },
     ],

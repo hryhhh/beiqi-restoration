@@ -35,8 +35,7 @@ export default function ComparisonSlider({ beforeSrc, afterSrc }: Props) {
       <img src={afterSrc} alt="修复后" className="absolute inset-0 w-full h-full object-cover" />
       {/* 修复前（裁剪层） */}
       <div className="absolute inset-0 overflow-hidden" style={{ width: `${position}%` }}>
-        <img src={beforeSrc} alt="修复前" className="absolute inset-0 w-full h-full object-cover"
-          style={{ minWidth: containerRef.current?.clientWidth }} />
+        <img src={beforeSrc} alt="修复前" className="absolute inset-0 w-full h-full object-cover" />
       </div>
       {/* 滑块线 */}
       <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg" style={{ left: `${position}%` }}>

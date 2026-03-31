@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import { Spin } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import type { UserRole } from '@/types';
 
@@ -9,9 +10,21 @@ interface Props {
 
 /** 路由权限守卫：未登录跳转登录页，角色不匹配显示 403 */
 export default function ProtectedRoute({ roles }: Props) {
-  const { token, user } = useAuthStore();
+  const { token, user, initialized } = useAuthStore();
+
+  if (!initialized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (roles && !user) {
     return <Navigate to="/login" replace />;
   }
 

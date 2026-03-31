@@ -1,17 +1,20 @@
 import { useCallback, useRef, useState } from 'react';
 
 /**
- * 数字计数动画组件
- * 进入视口时从 0 平滑增长到目标值
+ * 数字计数动画组件 — 金色渐变大字
  */
 export default function CountUpBlock({
   target,
   label,
+  suffix = '',
+  icon,
   duration = 2000,
   className = '',
 }: {
   target: number;
   label: string;
+  suffix?: string;
+  icon?: React.ReactNode;
   duration?: number;
   className?: string;
 }) {
@@ -50,10 +53,11 @@ export default function CountUpBlock({
 
   return (
     <div ref={nodeRef} className={className}>
-      <div className="text-5xl md:text-6xl font-extrabold text-primary tracking-tight">
-        {displayValue}
+      {icon && <div className="text-2xl mb-3" style={{ color: '#C9A66B' }}>{icon}</div>}
+      <div className="stat-number">
+        {displayValue.toLocaleString()}{suffix}
       </div>
-      <div className="text-text-secondary text-sm mt-2 tracking-wide">{label}</div>
+      <div className="text-text-secondary text-sm mt-3 tracking-wide">{label}</div>
     </div>
   );
 }

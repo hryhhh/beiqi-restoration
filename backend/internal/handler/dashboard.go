@@ -48,5 +48,28 @@ func (h *DashboardHandler) Charts(c *gin.Context) {
 	var distribution []statusCount
 	h.db.Model(&model.Mural{}).Select("status, count(*) as count").Group("status").Scan(&distribution)
 
-	response.OK(c, gin.H{"statusDistribution": distribution})
+	// 修复进度趋势（最近 12 个月，按月统计已完成项目数和进行中项目数）
+	type monthlyTrend struct {
+		Month      string `json:"month"`
+		Completed  int64  `json:"completed"`
+		InProgress int64  `json:"inProgress"`
+	}
+	var trends []monthlyTrend
+	h.db.Raw(`
+		SELECT to_char(date_trunc('month', s.m), 'YYYY-MM') AS month,
+			COALESCE(SUM(CASE WHEN p.status = 'completed' THEN 1 ELSE 0 END), 0) AS completed,
+			COALESCE(SUM(CASE WHEN p.status = 'in_progress' THEN 1 ELSE 0 END), 0) AS in_progress
+		FROM generate_series(
+			date_trunc('month', NOW()) - interval '11 months',
+			date_trunc('month', NOW()),
+			interval '1 month'
+		) AS s(m)
+		LEFT JOIN projects p ON date_trunc('month', p.updated_at) = s.m
+		GROUP BY s.m ORDER BY s.m
+	`).Scan(&trends)
+
+	response.OK(c, gin.H{
+		"statusDistribution": distribution,
+		"progressTrend":      trends,
+	})
 }

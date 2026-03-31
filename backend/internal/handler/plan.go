@@ -4,15 +4,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hry/beiqi-mural-guardian/backend/internal/model"
 	"github.com/hry/beiqi-mural-guardian/backend/pkg/response"
+	"github.com/hry/beiqi-mural-guardian/backend/pkg/storage"
 	"gorm.io/gorm"
 )
 
 type PlanHandler struct {
-	db *gorm.DB
+	db    *gorm.DB
+	store *storage.LocalStorage
 }
 
-func NewPlanHandler(db *gorm.DB) *PlanHandler {
-	return &PlanHandler{db: db}
+func NewPlanHandler(db *gorm.DB, store *storage.LocalStorage) *PlanHandler {
+	return &PlanHandler{db: db, store: store}
 }
 
 // Create 创建修复方案
@@ -120,4 +122,47 @@ func (h *PlanHandler) Review(c *gin.Context) {
 	h.db.Model(&model.RestorationPlan{}).Where("id = ?", c.Param("id")).Update("status", newStatus)
 
 	response.OK(c, review)
+}
+
+// UpdateContent 编辑方案内容（method/materials/expectedResult）
+func (h *PlanHandler) UpdateContent(c *gin.Context) {
+	var req struct {
+		Method         *string `json:"method"`
+		Materials      *string `json:"materials"`
+		ExpectedResult *string `json:"expectedResult"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请求参数无效")
+		return
+	}
+	var plan model.RestorationPlan
+	if err := h.db.First(&plan, "id = ?", c.Param("id")).Error; err != nil {
+		response.NotFound(c, "修复方案")
+		return
+	}
+	if req.Method != nil {
+		plan.Method = *req.Method
+	}
+	if req.Materials != nil {
+		plan.Materials = *req.Materials
+	}
+	if req.ExpectedResult != nil {
+		plan.ExpectedResult = req.ExpectedResult
+	}
+	h.db.Save(&plan)
+	response.OK(c, plan)
+}
+
+// Delete 删除方案（级联删除审批记录和状态变更）
+func (h *PlanHandler) Delete(c *gin.Context) {
+	id := c.Param("id")
+	var plan model.RestorationPlan
+	if err := h.db.First(&plan, "id = ?", id).Error; err != nil {
+		response.NotFound(c, "修复方案")
+		return
+	}
+	h.db.Where("plan_id = ?", id).Delete(&model.PlanReview{})
+	h.db.Where("plan_id = ?", id).Delete(&model.PlanStatusChange{})
+	h.db.Delete(&plan)
+	response.OK(c, nil)
 }

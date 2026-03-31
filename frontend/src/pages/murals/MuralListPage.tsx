@@ -27,7 +27,7 @@ export default function MuralListPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [search, setSearch] = useState('');
 
-  useEffect(() => { fetchMurals(); }, []);
+  useEffect(() => { fetchMurals(); }, [fetchMurals]);
 
   /** 列表视图列定义 */
   const columns: ColumnsType<MuralRecord> = [
@@ -55,10 +55,12 @@ export default function MuralListPage() {
   ];
 
   return (
-    <div>
+    <div className="page-container">
       {/* 顶部操作栏 */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <h2 className="text-xl font-bold m-0">壁画库</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="page-title m-0">壁画库</h2>
+        </div>
         <Space>
           <Input
             placeholder="搜索壁画名称"
@@ -68,16 +70,16 @@ export default function MuralListPage() {
             onPressEnter={() => setParams({ name: search, page: 1 })}
             allowClear
             onClear={() => setParams({ name: '', page: 1 })}
-            className="!w-52"
+            className="w-52!"
           />
           <Select
             placeholder="状态筛选"
             allowClear
-            className="!w-28"
+            className="w-28!"
             options={Object.entries(MURAL_STATUS_MAP).map(([v, l]) => ({ value: v, label: l }))}
             onChange={(v) => setParams({ status: v || '', page: 1 })}
           />
-          <div className="border rounded flex">
+          <div className="rounded flex">
             <Tooltip title="卡片视图">
               <Button
                 type={viewMode === 'card' ? 'primary' : 'text'}

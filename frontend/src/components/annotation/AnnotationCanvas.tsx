@@ -3,7 +3,6 @@ import OpenSeadragon from 'openseadragon';
 import * as fabric from 'fabric';
 import type { DamageAnnotation, AnnotationCoordinates } from '@/types';
 import type { DrawMode } from '@/hooks/useAnnotation';
-import { DAMAGE_TYPE_MAP } from '@/constants';
 
 /** 病害类型对应的标注颜色 */
 const DAMAGE_COLORS: Record<string, string> = {
@@ -11,6 +10,26 @@ const DAMAGE_COLORS: Record<string, string> = {
   cracking: '#9b59b6', pigment_loss: '#3498db', fading: '#1abc9c',
   soiling: '#95a5a6', mold: '#27ae60', insect_damage: '#d35400', root_damage: '#2c3e50',
 };
+
+const ANNOTATION_ID_KEY = 'annotationId';
+const TEMP_MARK_KEY = 'tempMark';
+
+function setAnnotationId(obj: fabric.Object, annotationId: string) {
+  obj.set(ANNOTATION_ID_KEY, annotationId);
+}
+
+function getAnnotationId(obj: fabric.Object): string | undefined {
+  const value = obj.get(ANNOTATION_ID_KEY);
+  return typeof value === 'string' ? value : undefined;
+}
+
+function markTemporary(obj: fabric.Object) {
+  obj.set(TEMP_MARK_KEY, true);
+}
+
+function isTemporary(obj: fabric.Object): boolean {
+  return obj.get(TEMP_MARK_KEY) === true;
+}
 
 interface Props {
   /** 壁画图像 URL */
@@ -89,8 +108,8 @@ export default function AnnotationCanvas({
           stroke: isSelected ? '#fff' : color,
           strokeWidth: isSelected ? 3 : 2,
           selectable: false,
-          data: { annotationId: anno.id },
         });
+        setAnnotationId(rect, anno.id);
         canvas.add(rect);
       } else {
         // polygon 或 path
@@ -99,14 +118,19 @@ export default function AnnotationCanvas({
           stroke: isSelected ? '#fff' : color,
           strokeWidth: isSelected ? 3 : 2,
           selectable: false,
-          data: { annotationId: anno.id },
         });
+        setAnnotationId(poly, anno.id);
         canvas.add(poly);
       }
     }
 
     canvas.renderAll();
   }, [annotations, selectedId, imageToCanvas]);
+
+  const renderAnnotationsRef = useRef(renderAnnotations);
+  useEffect(() => {
+    renderAnnotationsRef.current = renderAnnotations;
+  }, [renderAnnotations]);
 
   /** 初始化 OpenSeadragon + Fabric.js 叠加层 */
   useEffect(() => {
@@ -146,10 +170,12 @@ export default function AnnotationCanvas({
       canvasRef.current = fCanvas;
 
       // 视口变化时重新渲染标注
-      viewer.addHandler('animation', renderAnnotations);
-      viewer.addHandler('resize', () => { resize(); renderAnnotations(); });
+      const onViewerAnimation = () => renderAnnotationsRef.current();
+      const onViewerResize = () => { resize(); renderAnnotationsRef.current(); };
+      viewer.addHandler('animation', onViewerAnimation);
+      viewer.addHandler('resize', onViewerResize);
 
-      renderAnnotations();
+      renderAnnotationsRef.current();
     });
 
     return () => {
@@ -178,17 +204,20 @@ export default function AnnotationCanvas({
       drawPointsRef.current = [];
 
       // 点击标注选中
-      const clickHandler = (e: OpenSeadragon.ViewerEvent) => {
-        if (!e.position) return;
-        const pos = e.position as OpenSeadragon.Point;
-        const target = canvas.findTarget(
+      const clickHandler = (e: OpenSeadragon.CanvasClickEvent) => {
+        const pos = e.position;
+        const targetInfo = canvas.findTarget(
           { clientX: pos.x, clientY: pos.y } as unknown as MouseEvent
         );
-        if (target && (target as unknown as { data?: { annotationId?: string } }).data?.annotationId) {
-          onSelect((target as unknown as { data: { annotationId: string } }).data.annotationId);
-        } else {
-          onSelect(null);
+        const target = targetInfo.target;
+        if (target) {
+          const annotationId = getAnnotationId(target);
+          if (annotationId) {
+            onSelect(annotationId);
+            return;
+          }
         }
+        onSelect(null);
       };
       viewer.addHandler('canvas-click', clickHandler);
       return () => { viewer.removeHandler('canvas-click', clickHandler); };
@@ -202,7 +231,7 @@ export default function AnnotationCanvas({
     let tempShape: fabric.Object | null = null;
     let startPoint: { x: number; y: number } | null = null;
 
-    const handleMouseDown = (opt: fabric.TEvent<MouseEvent>) => {
+    const handleMouseDown = (opt: fabric.CanvasEvents['mouse:down']) => {
       const pointer = canvas.getViewportPoint(opt.e);
       const imgPt = canvasToImage(pointer.x, pointer.y);
 
@@ -220,14 +249,15 @@ export default function AnnotationCanvas({
         // 绘制临时点
         const dot = new fabric.Circle({
           left: pointer.x - 4, top: pointer.y - 4, radius: 4,
-          fill: '#e74c3c', selectable: false, data: { temp: true },
+          fill: '#e74c3c', selectable: false,
         });
+        markTemporary(dot);
         canvas.add(dot);
         canvas.renderAll();
       }
     };
 
-    const handleMouseMove = (opt: fabric.TEvent<MouseEvent>) => {
+    const handleMouseMove = (opt: fabric.CanvasEvents['mouse:move']) => {
       if (drawMode === 'rect' && tempShape && startPoint) {
         const pointer = canvas.getViewportPoint(opt.e);
         const rect = tempShape as fabric.Rect;
@@ -241,7 +271,7 @@ export default function AnnotationCanvas({
       }
     };
 
-    const handleMouseUp = (opt: fabric.TEvent<MouseEvent>) => {
+    const handleMouseUp = (opt: fabric.CanvasEvents['mouse:up']) => {
       if (drawMode === 'rect' && startPoint) {
         const pointer = canvas.getViewportPoint(opt.e);
         const endPt = canvasToImage(pointer.x, pointer.y);
@@ -260,7 +290,7 @@ export default function AnnotationCanvas({
         onDrawComplete({ type: 'polygon', points: drawPointsRef.current });
         // 清理临时点
         const tempObjects = canvas.getObjects().filter(
-          (o) => (o as unknown as { data?: { temp?: boolean } }).data?.temp
+          (o) => isTemporary(o)
         );
         tempObjects.forEach((o) => canvas.remove(o));
         drawPointsRef.current = [];
@@ -280,7 +310,7 @@ export default function AnnotationCanvas({
       canvas.off('mouse:dblclick', handleDblClick);
       // 清理临时图形
       const tempObjects = canvas.getObjects().filter(
-        (o) => (o as unknown as { data?: { temp?: boolean } }).data?.temp
+        (o) => isTemporary(o)
       );
       tempObjects.forEach((o) => canvas.remove(o));
       if (tempShape) canvas.remove(tempShape);
