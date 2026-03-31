@@ -49,7 +49,7 @@ export default function AnnotationPanel({
 
           return (
             <List.Item
-              className={`cursor-pointer transition-colors !px-3 ${isSelected ? '!bg-primary/5 border-l-2 !border-l-primary' : 'hover:!bg-gray-50'}`}
+              className={`cursor-pointer transition-colors px-3! ${isSelected ? 'bg-primary/5! border-l-2 border-l-primary!' : 'hover:bg-gray-50!'}`}
               onClick={() => onSelect(isSelected ? null : anno.id)}
             >
               <div className="w-full">
@@ -83,12 +83,12 @@ export default function AnnotationPanel({
                 {isEditing && (
                   <div className="mt-2 flex gap-2 items-center" onClick={(e) => e.stopPropagation()}>
                     <Select
-                      size="small" defaultValue={anno.damageType} className="!w-28"
+                      size="small" defaultValue={anno.damageType} className="w-28!"
                       options={Object.entries(DAMAGE_TYPE_MAP).map(([v, d]) => ({ value: v, label: d.label }))}
                       onChange={(v) => { onUpdate(anno.id, { damageType: v as DamageType }); setEditingId(null); }}
                     />
                     <InputNumber
-                      size="small" min={1} max={5} defaultValue={anno.severity} className="!w-16"
+                      size="small" min={1} max={5} defaultValue={anno.severity} className="w-16!"
                       onChange={(v) => { if (v) { onUpdate(anno.id, { severity: v }); setEditingId(null); } }}
                     />
                   </div>

@@ -81,6 +81,22 @@ html {
   gap: 10px;
 }
 
+.brand-logo-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.login-logo-image {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
 .login-logo-icon {
   width: 36px;
   height: 36px;
@@ -463,6 +479,68 @@ html {
   overflow: hidden;
   border: 1px solid #E8DFD2;
   background: linear-gradient(135deg, #F3EDE3, #E8DFD2);
+  box-shadow: 0 12px 36px rgba(63,46,30,0.12);
+}
+
+.comparison-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.comparison-container:hover .comparison-preview-image {
+  transform: scale(1.02);
+}
+
+.comparison-preview-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(22,16,10,0.06) 0%, rgba(22,16,10,0.18) 100%);
+  pointer-events: none;
+}
+
+.comparison-center-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 0 0 1px rgba(63,46,30,0.25);
+  pointer-events: none;
+}
+
+.comparison-chip {
+  position: absolute;
+  top: 14px;
+  z-index: 2;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: #fff;
+  background: rgba(42,33,24,0.62);
+  border: 1px solid rgba(255,255,255,0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.comparison-chip-left {
+  left: 14px;
+}
+
+.comparison-chip-right {
+  right: 14px;
+}
+
+@media (max-width: 640px) {
+  .comparison-chip {
+    top: 10px;
+    padding: 5px 9px;
+    font-size: 11px;
+  }
 }
 
 /* ===== 页脚 ===== */

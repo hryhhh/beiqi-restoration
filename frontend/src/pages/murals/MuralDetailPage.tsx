@@ -94,7 +94,7 @@ export default function MuralDetailPage() {
                 <Select
                   value={uploadType}
                   onChange={setUploadType}
-                  className="w-28!"
+                  style={{ width: 112 }}
                   options={Object.entries(IMAGE_TYPE_MAP).map(([v, l]) => ({ value: v, label: l }))}
                 />
                 <Upload
@@ -120,9 +120,9 @@ export default function MuralDetailPage() {
                     {mural.images.map((img) => (
                       <div key={img.id} className="border rounded overflow-hidden">
                         <Image
-                          src={`/api/uploads/${img.filePath}`}
+                          src={`/uploads/${img.filePath}`}
                           alt={`${mural.name} - ${IMAGE_TYPE_MAP[img.imageType]}`}
-                          className="h-40! object-cover"
+                          style={{ height: 160, objectFit: 'cover' }}
                           width="100%"
                         />
                         <div className="p-2 text-xs text-text-secondary">
@@ -155,7 +155,7 @@ export default function MuralDetailPage() {
                 />
                 <div className="flex-1">
                   <AnnotationCanvas
-                    imageUrl={`/api/uploads/${(mural.images.find((img) => img.imageType === anno.activeLayer) || mural.images[0]).filePath}`}
+                    imageUrl={`/uploads/${(mural.images.find((img) => img.imageType === anno.activeLayer) || mural.images[0]).filePath}`}
                     annotations={anno.annotations}
                     drawMode={anno.drawMode}
                     selectedId={anno.selected}

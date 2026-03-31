@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import type { LoginRequest } from '@/types';
 
+const brandLogo = '/logo.jpg';
+
 export default function LoginPage() {
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -29,7 +31,7 @@ export default function LoginPage() {
       {/* 顶部导航 */}
       <header className="login-header">
         <div className="login-logo">
-          <span className="login-logo-icon">壁</span>
+          <img src={brandLogo} alt="北齐壁蕴 Logo" className="login-logo-image" />
           <span className="login-logo-text">北齐壁蕴</span>
         </div>
         <Link to="/" className="login-back-link">返回官网</Link>

@@ -203,7 +203,7 @@ export default function AnalysisPage() {
           showSearch
           allowClear
           placeholder="选择关联壁画（可搜索）"
-          className="!w-80"
+          className="w-80!"
           value={selectedMuralId || undefined}
           onChange={(v) => setSelectedMuralId(v || '')}
           filterOption={(input, option) =>

@@ -6,7 +6,7 @@ dev-fe:
 
 # 启动后端开发服务器
 dev-be:
-	cd backend && make run
+	cd backend && make dev
 
 # 构建前端
 build-fe:

@@ -14,7 +14,6 @@ import {
   LockOutlined,
   FileTextOutlined,
   RobotOutlined,
-  FundProjectionScreenOutlined,
   SyncOutlined,
   MailOutlined,
   PhoneOutlined,
@@ -27,7 +26,9 @@ import Header from '@/components/layout/Header';
 import HeroParticles from '@/components/landing/HeroParticles';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import CountUpBlock from '@/components/landing/CountUpBlock';
-import heroImg from '@/assets/images/hero.png';
+import heroImg from '@/assets/images/hero.jpg';
+import coreFeaturesBg from '@/assets/images/hexin.jpg';
+import comparisonSampleImg from '@/assets/images/show.jpg';
 
 /* ===== 数据 ===== */
 
@@ -254,13 +255,15 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           {/* 对比图区域 */}
           <div className="animate-on-scroll comparison-container h-72 md:h-[400px] flex items-center justify-center mb-8 group cursor-pointer">
-            <div className="flex items-center gap-4 transition-transform duration-500 group-hover:scale-105" style={{ color: '#A89888' }}>
-              <FundProjectionScreenOutlined className="text-5xl" />
-              <div className="text-left">
-                <span className="text-lg font-medium block">修复前后对比预览</span>
-                <span className="text-xs opacity-60">Before &amp; After</span>
-              </div>
-            </div>
+            <img
+              src={comparisonSampleImg}
+              alt="徐显秀墓《宴饮图》修复前后对比样例"
+              className="comparison-preview-image"
+            />
+            <div className="comparison-preview-shade" />
+            <div className="comparison-center-line" />
+            <span className="comparison-chip comparison-chip-left">修复前</span>
+            <span className="comparison-chip comparison-chip-right">修复后</span>
           </div>
           {/* 案例说明 */}
           <div className="animate-on-scroll stagger-2 max-w-2xl">
@@ -277,7 +280,17 @@ export default function LandingPage() {
       </section>
 
       {/* ========== 核心功能模块（第二组：2×3 网格） ========== */}
-      <section ref={coreFeatRef} className="py-20 px-6 bg-bg-warm">
+      <section
+        ref={coreFeatRef}
+        className="py-20 px-6 bg-bg-warm"
+        style={{
+          backgroundImage:
+            `linear-gradient(180deg, rgba(250,247,242,0.42) 0%, rgba(250,247,242,0.56) 45%, rgba(250,247,242,0.68) 100%), url(${coreFeaturesBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center top',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
         <div className="max-w-6xl mx-auto">
           <h2 className="animate-on-scroll text-2xl md:text-3xl font-bold text-center mb-12 tracking-wide" style={{ color: '#8B3A2F' }}>
             核心功能

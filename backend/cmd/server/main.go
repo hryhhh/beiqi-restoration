@@ -152,6 +152,7 @@ func main() {
 		knowledge.GET("", knowledgeHandler.List)
 		knowledge.GET("/search", knowledgeHandler.Search)
 		knowledge.POST("/qa", knowledgeHandler.Ask)
+		knowledge.POST("/qa/stream", knowledgeHandler.AskStream)
 		knowledge.GET("/:id", knowledgeHandler.GetByID)
 		knowledge.POST("", middleware.RequireRoles(model.RoleAdmin), knowledgeHandler.Create)
 		knowledge.PUT("/:id", middleware.RequireRoles(model.RoleAdmin), knowledgeHandler.Update)

@@ -1,4 +1,4 @@
-import { get, post } from './request';
+import { post } from './request';
 import type { DamageAnnotation, DamageType } from '@/types';
 
 /** AI 检测结果 */

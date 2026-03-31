@@ -19,6 +19,7 @@ import type { UserRole } from '@/types';
 import bgImage from '@/assets/images/background.png';
 
 const { Sider, Header, Content } = Layout;
+const brandLogo = '/logo.jpg';
 
 /** 菜单项配置 */
 interface MenuItem {
@@ -81,7 +82,7 @@ export default function MainLayout() {
           onClick={() => navigate('/')}
           title="返回官网首页"
         >
-          <span className="text-xl mr-2">🏛</span>
+          <img src={brandLogo} alt="北齐壁蕴 Logo" className="brand-logo-img mr-2" />
           {!collapsed && (
             <span className="font-bold text-sm" style={{ color: '#8B3A2F' }}>北齐壁蕴</span>
           )}

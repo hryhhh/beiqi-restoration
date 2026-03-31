@@ -5,6 +5,8 @@ import { UserOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
 import { USER_ROLE_MAP } from '@/constants';
 
+const brandLogo = '/logo.jpg';
+
 /** 顶部导航栏 — 玻璃拟态风格 */
 export default function Header() {
   const navigate = useNavigate();
@@ -22,7 +24,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 no-underline group">
-          <span className="text-2xl">🏛</span>
+          <img src={brandLogo} alt="北齐壁蕴 Logo" className="brand-logo-img" />
           <div className="leading-tight">
             <div className="font-bold text-sm tracking-wide" style={{ color: '#8B3A2F' }}>
               北齐壁画
@@ -40,7 +42,7 @@ export default function Header() {
               <Button
                 type="primary"
                 size="small"
-                className="!rounded-md !font-medium !tracking-wide"
+                className="rounded-md! font-medium! tracking-wide!"
                 style={{ background: 'linear-gradient(135deg, #8B3A2F, #A85044)', border: 'none' }}
                 onClick={() => navigate('/dashboard')}
               >
@@ -57,7 +59,7 @@ export default function Header() {
             <Button
               type="primary"
               size="small"
-              className="!rounded-md !font-medium !tracking-wide"
+              className="rounded-md! font-medium! tracking-wide!"
               style={{ background: 'linear-gradient(135deg, #8B3A2F, #A85044)', border: 'none' }}
               onClick={() => navigate('/login')}
             >

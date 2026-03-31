@@ -70,12 +70,12 @@ export default function MuralListPage() {
             onPressEnter={() => setParams({ name: search, page: 1 })}
             allowClear
             onClear={() => setParams({ name: '', page: 1 })}
-            className="w-52!"
+            style={{ width: 208 }}
           />
           <Select
             placeholder="状态筛选"
             allowClear
-            className="w-28!"
+            style={{ width: 112 }}
             options={Object.entries(MURAL_STATUS_MAP).map(([v, l]) => ({ value: v, label: l }))}
             onChange={(v) => setParams({ status: v || '', page: 1 })}
           />
@@ -129,7 +129,7 @@ export default function MuralListPage() {
                       m.images?.[0] ? (
                         <div className="h-48 bg-gray-100 overflow-hidden">
                           <img
-                            src={`/api/uploads/${m.images[0].filePath}`}
+                            src={`/uploads/${m.images[0].filePath}`}
                             alt={m.name}
                             className="w-full h-full object-cover"
                           />

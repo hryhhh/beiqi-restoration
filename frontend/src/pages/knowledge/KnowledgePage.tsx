@@ -113,7 +113,7 @@ export default function KnowledgePage() {
           {isMock && <Tag color="warning" className="text-xs">演示数据</Tag>}
         </div>
         <div className="flex items-center gap-3">
-          <Input.Search placeholder="搜索文档" allowClear className="!w-60"
+          <Input.Search placeholder="搜索文档" allowClear className="w-60!"
             prefix={<SearchOutlined />} onSearch={handleSearch} />
           {isAdmin && (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm()}
@@ -157,7 +157,7 @@ export default function KnowledgePage() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {docs.map((doc) => (
-                  <Card key={doc.id} hoverable className="!cursor-pointer"
+                  <Card key={doc.id} hoverable className="cursor-pointer!"
                     onClick={() => openDetail(doc.id)}
                     actions={isAdmin ? [
                       <EditOutlined key="edit" onClick={(e) => { e.stopPropagation(); openForm(doc); }} />,

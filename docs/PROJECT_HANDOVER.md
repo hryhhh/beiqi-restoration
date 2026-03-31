@@ -39,7 +39,7 @@ docker compose up -d
 ```bash
 cd backend
 cp .env.example .env
-make run
+make dev
 ```
 3. 启动前端
 ```bash
@@ -227,7 +227,9 @@ make build-be    # 构建后端
 后端：
 ```bash
 cd backend
+make dev
 make run
+make install-air
 make test
 make tidy
 ```

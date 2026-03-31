@@ -21,7 +21,7 @@ export const MOCK_DASHBOARD_ALERTS: MuralRecord[] = [
     images: [], createdAt: '2025-06-01', updatedAt: '2025-11-20',
   },
   {
-    id: 'mock-m2', name: '太原娄睿墓骑行仪仗图', era: '北齐', site: '娄睿墓',
+    id: 'mock-m2', name: '太原娄睿墓鞍马游骑图', era: '北齐', site: '娄睿墓',
     material: '石灰地仗', status: 'assessing', healthIndex: 45, isFeatured: true,
     images: [], createdAt: '2025-03-15', updatedAt: '2025-10-08',
   },
@@ -67,7 +67,7 @@ export const MOCK_MURALS: MuralRecord[] = [
     images: [], createdAt: '2025-06-01', updatedAt: '2025-11-20',
   },
   {
-    id: 'mock-m2', name: '太原娄睿墓骑行仪仗图', era: '北齐', site: '太原娄睿墓',
+    id: 'mock-m2', name: '太原娄睿墓鞍马游骑图', era: '北齐', site: '太原娄睿墓',
     material: '石灰地仗', status: 'assessing', healthIndex: 45, isFeatured: true,
     images: [], createdAt: '2025-03-15', updatedAt: '2025-10-08',
   },

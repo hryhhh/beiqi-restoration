@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Tag, Select, Button, Popconfirm, message, Space, Input, Spin, Pagination } from 'antd';
+import { Tag, Select, Button, Popconfirm, message, Spin, Pagination } from 'antd';
 import {
   UserOutlined, FileTextOutlined, CloudDownloadOutlined, DatabaseOutlined,
   PlusOutlined, SearchOutlined, TeamOutlined, UserAddOutlined, StarOutlined,
@@ -7,17 +7,8 @@ import {
 } from '@ant-design/icons';
 import { getUsers, updateUserRole, getLogs, triggerBackup, triggerExport, resetUserPassword, deleteUser } from '@/api/admin';
 import { USER_ROLE_MAP } from '@/constants';
-import type { User, UserRole, AuditLog } from '@/types';
+import type { User, AuditLog } from '@/types';
 import './admin.css';
-
-/** 角色对应的颜色配置 */
-const ROLE_COLOR_MAP: Record<UserRole, { bg: string; text: string; border: string }> = {
-  admin: { bg: '#FEF2F2', text: '#991B1B', border: '#FECACA' },
-  researcher: { bg: '#EFF6FF', text: '#1E40AF', border: '#BFDBFE' },
-  reviewer: { bg: '#FFF7ED', text: '#C2410C', border: '#FED7AA' },
-  assistant: { bg: '#F0FDF4', text: '#166534', border: '#BBF7D0' },
-  chief_restorer: { bg: '#FFFBEB', text: '#92400E', border: '#FDE68A' },
-};
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'users' | 'logs' | 'data'>('users');
@@ -198,7 +189,7 @@ function UserManagement() {
                     <Select
                       size="small"
                       value={user.role}
-                      className="!w-28"
+                      className="w-28!"
                       onChange={(role) => handleRoleChange(user.id, role)}
                       options={Object.entries(USER_ROLE_MAP).map(([v, l]) => ({ value: v, label: l }))}
                     />
@@ -248,7 +239,7 @@ function UserManagement() {
               total={totalUsers}
               onChange={setPage}
               showSizeChanger={false}
-              itemRender={(p, type, original) => {
+              itemRender={(_page, type, original) => {
                 if (type === 'prev') return <span className="admin-page-nav">上一页</span>;
                 if (type === 'next') return <span className="admin-page-nav">下一页</span>;
                 return original;

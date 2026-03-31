@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Modal, Form, Input, Select, InputNumber, DatePicker, Spin, message } from 'antd';
+import { Modal, Form, Input, Select, InputNumber, Spin, message } from 'antd';
 import { createProject } from '@/api/project';
 import { getMurals } from '@/api/mural';
 import type { MuralRecord, Project } from '@/types';
@@ -65,7 +65,7 @@ export default function ProjectFormModal({ open, editingProject, onClose, onSucc
           <Input.TextArea rows={3} placeholder="项目描述..." />
         </Form.Item>
         <Form.Item name="budget" label="预算（元）">
-          <InputNumber min={0} className="!w-full" placeholder="项目预算" />
+          <InputNumber min={0} className="w-full!" placeholder="项目预算" />
         </Form.Item>
         {!editingProject && (
           <Form.Item name="muralIds" label="关联壁画">

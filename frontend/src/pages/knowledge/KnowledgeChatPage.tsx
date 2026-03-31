@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input, Spin, Tag, Button, Modal } from 'antd';
-import { RobotOutlined, SendOutlined, ClearOutlined, BookOutlined } from '@ant-design/icons';
+import { RobotOutlined, SendOutlined, ClearOutlined, BookOutlined, StopOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
-import { askKnowledge, getKnowledgeDoc, type QAResult } from '@/api/knowledge';
+import { askKnowledgeStream, getKnowledgeDoc, type QAResult } from '@/api/knowledge';
 import { DOC_CATEGORY_MAP } from '@/constants';
 import { useAuthStore } from '@/stores/authStore';
 import type { KnowledgeDoc, DocCategory } from '@/types';
@@ -20,6 +20,40 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 type QAMessage = { role: 'user' | 'assistant'; content: string; sources?: QAResult['sources'] };
+type DocHit = { keyword: string; paragraph: string };
+
+const CITE_RE = /\[(\d{1,2})\](?!\()/g;
+
+function toCitationMarkdown(content: string): string {
+  return content.replace(CITE_RE, (_m, idx: string) => `[[${idx}]](cite://${idx})`);
+}
+
+function extractKeywords(text: string): string[] {
+  const stopWords = new Set([
+    '请问', '一下', '是什么', '什么', '如何', '怎么', '怎样', '关于', '有关',
+    '的', '了', '吗', '呢', '吧', '和', '与', '及',
+  ]);
+  const parts = text
+    .toLowerCase()
+    .split(/[\s,，。！？；;、:.：\n]+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 2 && !stopWords.has(s));
+  return Array.from(new Set(parts)).slice(0, 8);
+}
+
+function findHitParagraph(content: string, keywords: string[]): DocHit | null {
+  if (keywords.length === 0) return null;
+  const paragraphs = content
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  for (const kw of keywords) {
+    const hit = paragraphs.find((p) => p.toLowerCase().includes(kw));
+    if (hit) return { keyword: kw, paragraph: hit };
+  }
+  return null;
+}
 
 export default function KnowledgeChatPage() {
   const navigate = useNavigate();
@@ -28,27 +62,114 @@ export default function KnowledgeChatPage() {
   const [qaLoading, setQaLoading] = useState(false);
   const [qaMessages, setQaMessages] = useState<QAMessage[]>([]);
   const [detailDoc, setDetailDoc] = useState<KnowledgeDoc | null>(null);
+  const [detailHit, setDetailHit] = useState<DocHit | null>(null);
   const qaEndRef = useRef<HTMLDivElement>(null);
+  const qaAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => () => {
+    qaAbortRef.current?.abort();
+  }, []);
+
+  const patchLastAssistant = (patch: Partial<QAMessage>) => {
+    setQaMessages((prev) => {
+      const next = [...prev];
+      for (let i = next.length - 1; i >= 0; i--) {
+        if (next[i].role === 'assistant') {
+          next[i] = { ...next[i], ...patch };
+          break;
+        }
+      }
+      return next;
+    });
+  };
+
+  const appendAssistantDelta = (delta: string) => {
+    if (!delta) return;
+    setQaMessages((prev) => {
+      const next = [...prev];
+      for (let i = next.length - 1; i >= 0; i--) {
+        if (next[i].role === 'assistant') {
+          next[i] = { ...next[i], content: (next[i].content || '') + delta };
+          break;
+        }
+      }
+      return next;
+    });
+  };
+
+  const markLastAssistantStopped = () => {
+    setQaMessages((prev) => {
+      const next = [...prev];
+      for (let i = next.length - 1; i >= 0; i--) {
+        if (next[i].role === 'assistant') {
+          if (!next[i].content.trim()) {
+            next[i] = { ...next[i], content: '已停止生成。' };
+          }
+          break;
+        }
+      }
+      return next;
+    });
+  };
+
+  const stopStreaming = () => {
+    qaAbortRef.current?.abort();
+  };
 
   const sendQuestion = async (q: string) => {
-    if (!q.trim() || qaLoading) return;
+    const question = q.trim();
+    if (!question || qaLoading) return;
+    const controller = new AbortController();
+    qaAbortRef.current = controller;
+
     setQaInput('');
-    setQaMessages((prev) => [...prev, { role: 'user', content: q }]);
+    setQaMessages((prev) => [...prev, { role: 'user', content: question }, { role: 'assistant', content: '' }]);
     setQaLoading(true);
     setTimeout(() => qaEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     try {
-      const res = await askKnowledge(q);
-      setQaMessages((prev) => [...prev, { role: 'assistant', content: res.answer, sources: res.sources }]);
-    } catch {
-      setQaMessages((prev) => [...prev, { role: 'assistant', content: '抱歉，问答服务暂时不可用，请稍后再试。' }]);
+      await askKnowledgeStream(question, {
+        onToken: (delta) => {
+          appendAssistantDelta(delta);
+          setTimeout(() => qaEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 10);
+        },
+        onDone: (res) => {
+          patchLastAssistant({ content: res.answer, sources: res.sources });
+        },
+        onError: (message) => {
+          patchLastAssistant({ content: message || '抱歉，问答流中断，请稍后再试。' });
+        },
+      }, { signal: controller.signal });
+    } catch (err) {
+      if ((err instanceof Error && err.name === 'AbortError') || controller.signal.aborted) {
+        markLastAssistantStopped();
+        return;
+      }
+      const msg = err instanceof Error ? err.message : '抱歉，问答服务暂时不可用，请稍后再试。';
+      patchLastAssistant({ content: msg });
     } finally {
+      if (qaAbortRef.current === controller) {
+        qaAbortRef.current = null;
+      }
       setQaLoading(false);
       setTimeout(() => qaEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     }
   };
 
-  const openDetail = async (id: string) => {
-    try { setDetailDoc(await getKnowledgeDoc(id)); } catch { /* 忽略 */ }
+  const getNearestQuestion = (idx: number) => {
+    for (let i = idx; i >= 0; i--) {
+      if (qaMessages[i]?.role === 'user') return qaMessages[i].content;
+    }
+    return '';
+  };
+
+  const openDetail = async (id: string, contextQuestion = '') => {
+    try {
+      const doc = await getKnowledgeDoc(id);
+      setDetailDoc(doc);
+      setDetailHit(findHitParagraph(doc.content, extractKeywords(contextQuestion)));
+    } catch {
+      // 忽略
+    }
   };
 
   return (
@@ -60,7 +181,7 @@ export default function KnowledgeChatPage() {
         </div>
         <div className="flex items-center gap-3">
           {qaMessages.length > 0 && (
-            <Button icon={<ClearOutlined />} onClick={() => setQaMessages([])}>清空对话</Button>
+            <Button icon={<ClearOutlined />} onClick={() => { stopStreaming(); setQaMessages([]); }}>清空对话</Button>
           )}
         </div>
       </div>
@@ -113,7 +234,37 @@ export default function KnowledgeChatPage() {
                   }`}>
                     {msg.role === 'assistant' ? (
                       <div className="prose prose-sm max-w-none [&_p]:my-1 [&_p]:leading-relaxed [&_li]:my-0.5 [&_strong]:text-text-primary">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        {msg.content ? (
+                          <ReactMarkdown
+                            components={{
+                              a: ({ href, children }) => {
+                                if (href?.startsWith('cite://')) {
+                                  const idx = Number(href.replace('cite://', ''));
+                                  const source = msg.sources?.[idx - 1];
+                                  if (!source) return <span>{children}</span>;
+                                  return (
+                                    <button
+                                      type="button"
+                                      className="mx-0.5 px-1 py-0 rounded border border-primary/30 text-primary bg-primary/5 cursor-pointer"
+                                      onClick={() => openDetail(source.id, getNearestQuestion(i))}
+                                    >
+                                      {children}
+                                    </button>
+                                  );
+                                }
+                                return (
+                                  <a href={href} target="_blank" rel="noreferrer">
+                                    {children}
+                                  </a>
+                                );
+                              },
+                            }}
+                          >
+                            {toCitationMarkdown(msg.content)}
+                          </ReactMarkdown>
+                        ) : (
+                          <Spin size="small" />
+                        )}
                       </div>
                     ) : msg.content}
                     {msg.sources && msg.sources.length > 0 && (
@@ -126,7 +277,7 @@ export default function KnowledgeChatPage() {
                             <span key={s.id}
                               className="text-xs px-2 py-0.5 rounded cursor-pointer transition-colors hover:opacity-80"
                               style={{ background: 'rgba(139,58,47,0.08)', color: '#8B3A2F' }}
-                              onClick={() => openDetail(s.id)}>
+                              onClick={() => openDetail(s.id, getNearestQuestion(i))}>
                               {s.title}
                             </span>
                           ))}
@@ -136,17 +287,6 @@ export default function KnowledgeChatPage() {
                   </div>
                 </div>
               ))}
-              {qaLoading && (
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: 'linear-gradient(135deg, rgba(139,58,47,0.1), rgba(201,166,107,0.2))' }}>
-                    <RobotOutlined style={{ color: '#8B3A2F' }} />
-                  </div>
-                  <div className="bg-bg-cream rounded-xl rounded-tl-sm px-4 py-3 text-sm text-text-secondary">
-                    <Spin size="small" className="mr-2" />正在检索知识库并生成回答...
-                  </div>
-                </div>
-              )}
               <div ref={qaEndRef} />
             </div>
           )}
@@ -156,19 +296,41 @@ export default function KnowledgeChatPage() {
           <div className="flex gap-3 max-w-3xl mx-auto">
             <Input size="large" placeholder="输入你的问题，如：壁画修复的标准流程是什么？"
               value={qaInput} onChange={(e) => setQaInput(e.target.value)}
-              onPressEnter={() => sendQuestion(qaInput)} disabled={qaLoading} className="!rounded-lg" />
+              onPressEnter={() => sendQuestion(qaInput)} disabled={qaLoading} className="rounded-lg!" />
+            {qaLoading && (
+              <Button size="large" icon={<StopOutlined />} onClick={stopStreaming} className="rounded-lg!">
+                停止生成
+              </Button>
+            )}
             <Button type="primary" size="large" icon={<SendOutlined />}
               disabled={!qaInput.trim() || qaLoading} onClick={() => sendQuestion(qaInput)}
-              className="!rounded-lg" style={{ background: '#8B3A2F', border: 'none' }} />
+              className="rounded-lg!" style={{ background: '#8B3A2F', border: 'none' }} />
           </div>
         </div>
       </div>
 
       {/* 文档详情弹窗（从引用来源点击打开） */}
-      <Modal title={detailDoc?.title} open={!!detailDoc} onCancel={() => setDetailDoc(null)} footer={null} width={720}>
+      <Modal
+        title={detailDoc?.title}
+        open={!!detailDoc}
+        onCancel={() => { setDetailDoc(null); setDetailHit(null); }}
+        footer={null}
+        width={720}
+      >
         {detailDoc && (
           <div>
             <Tag color={categoryColors[detailDoc.category]} className="mb-3">{DOC_CATEGORY_MAP[detailDoc.category]}</Tag>
+            {detailHit && (
+              <div
+                className="mb-3 p-3 rounded-lg border"
+                style={{ background: '#FFF8EF', borderColor: '#F1D3A8' }}
+              >
+                <div className="text-xs mb-1" style={{ color: '#9C2F2F' }}>
+                  定位段落（关键词：{detailHit.keyword}）
+                </div>
+                <div className="text-sm leading-relaxed whitespace-pre-wrap">{detailHit.paragraph}</div>
+              </div>
+            )}
             <div className="prose max-w-none text-sm leading-relaxed">
               <ReactMarkdown>{detailDoc.content}</ReactMarkdown>
             </div>

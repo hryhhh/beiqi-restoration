@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hry/beiqi-mural-guardian/backend/internal/model"
@@ -128,10 +131,65 @@ func (h *KnowledgeHandler) Ask(c *gin.Context) {
 		response.BadRequest(c, "请提供问题")
 		return
 	}
+	req.Question = strings.TrimSpace(req.Question)
+	if req.Question == "" {
+		response.BadRequest(c, "请提供问题")
+		return
+	}
 	result, err := h.qaSvc.Ask(req.Question)
 	if err != nil {
 		response.ServerError(c)
 		return
 	}
 	response.OK(c, result)
+}
+
+// AskStream 知识库问答（SSE 流式）
+func (h *KnowledgeHandler) AskStream(c *gin.Context) {
+	var req struct {
+		Question string `json:"question" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请提供问题")
+		return
+	}
+	req.Question = strings.TrimSpace(req.Question)
+	if req.Question == "" {
+		response.BadRequest(c, "请提供问题")
+		return
+	}
+
+	c.Header("Content-Type", "text/event-stream; charset=utf-8")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+
+	writeEvent := func(event string, payload any) error {
+		data, err := json.Marshal(payload)
+		if err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(c.Writer, "event: %s\n", event); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(c.Writer, "data: %s\n\n", data); err != nil {
+			return err
+		}
+		c.Writer.Flush()
+		return nil
+	}
+
+	if err := writeEvent("start", gin.H{"message": "开始检索知识库"}); err != nil {
+		return
+	}
+
+	result, err := h.qaSvc.AskStream(req.Question, func(delta string) error {
+		return writeEvent("token", gin.H{"delta": delta})
+	})
+	if err != nil {
+		_ = writeEvent("error", gin.H{"message": "问答流中断，请重试"})
+		return
+	}
+
+	_ = writeEvent("done", result)
 }
