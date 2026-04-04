@@ -30,7 +30,8 @@ type Mural struct {
 	CreatedAt      time.Time   `json:"createdAt"`
 	UpdatedAt      time.Time   `json:"updatedAt"`
 
-	Images      []MuralImage      `gorm:"foreignKey:MuralID" json:"images,omitempty"`
+	Images      []MuralImage       `gorm:"foreignKey:MuralID" json:"images,omitempty"`
+	Assets      []MuralAsset       `gorm:"foreignKey:MuralID" json:"assets,omitempty"`
 	Annotations []DamageAnnotation `gorm:"foreignKey:MuralID" json:"annotations,omitempty"`
 }
 

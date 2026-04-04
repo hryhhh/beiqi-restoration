@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Form, Input, Select, message } from 'antd';
+import { Modal, Form, Input, Select, App } from 'antd';
 import { createMural, updateMural } from '@/api/mural';
 import { MURAL_STATUS_MAP } from '@/constants';
 import type { MuralRecord } from '@/types';
@@ -14,6 +14,7 @@ interface Props {
 
 /** 壁画创建/编辑弹窗 */
 export default function MuralFormModal({ open, mural, onClose, onSuccess }: Props) {
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const isEdit = !!mural;
@@ -45,7 +46,7 @@ export default function MuralFormModal({ open, mural, onClose, onSuccess }: Prop
       onOk={handleSubmit}
       onCancel={onClose}
       confirmLoading={loading}
-      destroyOnClose
+      destroyOnHidden
       width={560}
     >
       <Form

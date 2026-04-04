@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Tag, Select, Button, Popconfirm, message, Spin, Pagination } from 'antd';
+import { Tag, Select, Button, Popconfirm, App, Spin, Pagination } from 'antd';
 import {
   UserOutlined, FileTextOutlined, CloudDownloadOutlined, DatabaseOutlined,
   PlusOutlined, SearchOutlined, TeamOutlined, UserAddOutlined, StarOutlined,
@@ -77,6 +77,7 @@ export default function AdminPage() {
 
 /** 用户管理 */
 function UserManagement() {
+  const { message } = App.useApp();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -332,6 +333,7 @@ function AuditLogs() {
 
 /** 数据管理 */
 function DataManagement() {
+  const { message } = App.useApp();
   const [backupLoading, setBackupLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
 

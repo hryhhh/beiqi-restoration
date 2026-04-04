@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { Form, Input, Button, message } from 'antd';
+import { Form, Input, Button, App } from 'antd';
 import { UserOutlined, LockOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import type { LoginRequest } from '@/types';
-
-const brandLogo = '/logo.jpg';
+import brandLogo from '../../assets/logo.jpg';
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
 
   const onFinish = async (values: LoginRequest) => {

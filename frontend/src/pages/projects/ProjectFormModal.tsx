@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Modal, Form, Input, Select, InputNumber, Spin, message } from 'antd';
+import { Modal, Form, Input, Select, InputNumber, Spin, App } from 'antd';
 import { createProject } from '@/api/project';
 import { getMurals } from '@/api/mural';
 import type { MuralRecord, Project } from '@/types';
@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function ProjectFormModal({ open, editingProject, onClose, onSuccess }: Props) {
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [murals, setMurals] = useState<MuralRecord[]>([]);
@@ -55,7 +56,7 @@ export default function ProjectFormModal({ open, editingProject, onClose, onSucc
     <Modal
       title={editingProject ? '编辑项目' : '新建修复项目'}
       open={open} onOk={handleSubmit} onCancel={onClose}
-      confirmLoading={loading} destroyOnClose
+      confirmLoading={loading} destroyOnHidden
     >
       <Form form={form} layout="vertical" className="mt-4">
         <Form.Item name="name" label="项目名称" rules={[{ required: true, message: '请输入项目名称' }]}>

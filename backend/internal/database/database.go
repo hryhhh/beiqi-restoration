@@ -21,6 +21,7 @@ func Init(cfg *config.DatabaseConfig) *gorm.DB {
 		&model.PasswordResetToken{},
 		&model.Mural{},
 		&model.MuralImage{},
+		&model.MuralAsset{},
 		&model.MuralHistory{},
 		&model.DamageAnnotation{},
 		&model.AnnotationSnapshot{},

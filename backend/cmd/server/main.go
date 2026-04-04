@@ -62,8 +62,9 @@ func main() {
 	// 壁画模块
 	muralRepo := repository.NewMuralRepository(db)
 	muralSvc := service.NewMuralService(muralRepo)
-	muralHandler := handler.NewMuralHandler(muralSvc)
+	muralHandler := handler.NewMuralHandler(muralSvc, db, store)
 	imageHandler := handler.NewImageHandler(db, store)
+	assetHandler := handler.NewAssetHandler(db, store)
 
 	murals := api.Group("/murals")
 	{
@@ -73,14 +74,19 @@ func main() {
 		// 创建/编辑：管理员 + 首席修复师
 		murals.POST("", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), muralHandler.Create)
 		murals.PUT("/:id", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), muralHandler.Update)
+		murals.DELETE("/:id", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), muralHandler.Delete)
 		murals.POST("/:id/images", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), imageHandler.Upload)
+		murals.DELETE("/:id/images/:imageId", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), imageHandler.Delete)
+		murals.POST("/:id/assets", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), assetHandler.Upload)
+		murals.DELETE("/:id/assets/:assetId", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), assetHandler.Delete)
+		murals.PUT("/:id/assets/:assetId/default", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), assetHandler.SetDefault)
 		murals.POST("/import", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), muralHandler.BatchImport)
 	}
 
 	// 标注模块
 	annoRepo := repository.NewAnnotationRepository(db)
 	annoSvc := service.NewAnnotationService(annoRepo)
-	annoHandler := handler.NewAnnotationHandler(annoSvc)
+	annoHandler := handler.NewAnnotationHandler(annoSvc, db)
 
 	annotations := murals.Group("/:id/annotations")
 	{

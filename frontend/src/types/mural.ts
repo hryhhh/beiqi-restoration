@@ -1,10 +1,9 @@
-/** 壁画状态 */
 export type MuralStatus = 'registered' | 'assessing' | 'restoring' | 'completed' | 'monitoring';
 
-/** 图像类型 */
 export type ImageType = 'visible' | 'infrared' | 'ultraviolet' | 'restored';
 
-/** 壁画图像 */
+export type AssetType = 'model' | 'panorama';
+
 export interface MuralImage {
   id: string;
   muralId: string;
@@ -20,7 +19,22 @@ export interface MuralImage {
   createdAt: string;
 }
 
-/** 壁画记录 */
+export interface MuralAsset {
+  id: string;
+  muralId: string;
+  assetType: AssetType;
+  name: string;
+  filePath: string;
+  fileHash: string;
+  mimeType: string;
+  fileSize: number;
+  width: number;
+  height: number;
+  version: number;
+  isDefault: boolean;
+  createdAt: string;
+}
+
 export interface MuralRecord {
   id: string;
   name: string;
@@ -35,11 +49,11 @@ export interface MuralRecord {
   healthIndex?: number;
   isFeatured: boolean;
   images: MuralImage[];
+  assets?: MuralAsset[];
   createdAt: string;
   updatedAt: string;
 }
 
-/** 壁画修改历史 */
 export interface MuralHistory {
   id: string;
   muralId: string;

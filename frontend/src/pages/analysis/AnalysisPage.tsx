@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, message, Spin, Select } from 'antd';
+import { Button, App, Spin, Select } from 'antd';
 import {
   CloudUploadOutlined,
   ExperimentOutlined,
@@ -60,6 +60,7 @@ function toDetectionBox(r: DetectionResult): DetectionBox {
 }
 
 export default function AnalysisPage() {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const [murals, setMurals] = useState<MuralRecord[]>([]);
   const [selectedMuralId, setSelectedMuralId] = useState<string>('');

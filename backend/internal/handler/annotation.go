@@ -6,14 +6,16 @@ import (
 	"github.com/hry/beiqi-mural-guardian/backend/internal/model"
 	"github.com/hry/beiqi-mural-guardian/backend/internal/service"
 	"github.com/hry/beiqi-mural-guardian/backend/pkg/response"
+	"gorm.io/gorm"
 )
 
 type AnnotationHandler struct {
 	svc *service.AnnotationService
+	db  *gorm.DB
 }
 
-func NewAnnotationHandler(svc *service.AnnotationService) *AnnotationHandler {
-	return &AnnotationHandler{svc: svc}
+func NewAnnotationHandler(svc *service.AnnotationService, db *gorm.DB) *AnnotationHandler {
+	return &AnnotationHandler{svc: svc, db: db}
 }
 
 type createAnnotationReq struct {
@@ -28,9 +30,9 @@ type updateAnnotationReq struct {
 	DamageType  *string                       `json:"damageType"`
 	Severity    *int                          `json:"severity"`
 	Coordinates *domain.AnnotationCoordinates `json:"coordinates"`
+	Description *string                       `json:"description"`
 }
 
-// Create 创建标注
 func (h *AnnotationHandler) Create(c *gin.Context) {
 	var req createAnnotationReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -43,7 +45,7 @@ func (h *AnnotationHandler) Create(c *gin.Context) {
 		imageLayer = model.ImageVisible
 	}
 
-	a := &model.DamageAnnotation{
+	annotation := &model.DamageAnnotation{
 		MuralID:     c.Param("id"),
 		DamageType:  model.DamageType(req.DamageType),
 		Severity:    req.Severity,
@@ -51,14 +53,27 @@ func (h *AnnotationHandler) Create(c *gin.Context) {
 		Description: req.Description,
 	}
 
-	if err := h.svc.Create(a, &req.Coordinates); err != nil {
+	if err := h.svc.Create(annotation, &req.Coordinates); err != nil {
 		response.ServerError(c)
 		return
 	}
-	response.Created(c, a)
+
+	changedBy := resolveChangedBy(c, h.db)
+	if err := createMuralHistoryEntry(
+		h.db,
+		annotation.MuralID,
+		"annotation."+string(annotation.ImageLayer),
+		nil,
+		historyString(formatAnnotationHistoryValue(*annotation)),
+		changedBy,
+	); err != nil {
+		response.ServerError(c)
+		return
+	}
+
+	response.Created(c, annotation)
 }
 
-// Update 更新标注
 func (h *AnnotationHandler) Update(c *gin.Context) {
 	var req updateAnnotationReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -66,30 +81,70 @@ func (h *AnnotationHandler) Update(c *gin.Context) {
 		return
 	}
 
-	var dt *model.DamageType
-	if req.DamageType != nil {
-		d := model.DamageType(*req.DamageType)
-		dt = &d
-	}
-
-	a, err := h.svc.Update(c.Param("annotationId"), req.Coordinates, dt, req.Severity)
+	existing, err := h.svc.GetByID(c.Param("annotationId"))
 	if err != nil {
 		response.NotFound(c, "标注")
 		return
 	}
-	response.OK(c, a)
+
+	var damageType *model.DamageType
+	if req.DamageType != nil {
+		nextDamageType := model.DamageType(*req.DamageType)
+		damageType = &nextDamageType
+	}
+
+	updated, changed, err := h.svc.Update(c.Param("annotationId"), req.Coordinates, damageType, req.Severity, req.Description)
+	if err != nil {
+		response.NotFound(c, "标注")
+		return
+	}
+
+	if changed {
+		changedBy := resolveChangedBy(c, h.db)
+		if err := createMuralHistoryEntry(
+			h.db,
+			existing.MuralID,
+			"annotation."+string(existing.ImageLayer),
+			historyString(formatAnnotationHistoryValue(*existing)),
+			historyString(formatAnnotationHistoryValue(*updated)),
+			changedBy,
+		); err != nil {
+			response.ServerError(c)
+			return
+		}
+	}
+
+	response.OK(c, updated)
 }
 
-// Delete 删除标注
 func (h *AnnotationHandler) Delete(c *gin.Context) {
+	existing, err := h.svc.GetByID(c.Param("annotationId"))
+	if err != nil {
+		response.NotFound(c, "标注")
+		return
+	}
+
 	if err := h.svc.Delete(c.Param("annotationId")); err != nil {
 		response.NotFound(c, "标注")
 		return
 	}
+
+	changedBy := resolveChangedBy(c, h.db)
+	if err := createMuralHistoryEntry(
+		h.db,
+		existing.MuralID,
+		"annotation."+string(existing.ImageLayer),
+		historyString(formatAnnotationHistoryValue(*existing)),
+		nil,
+		changedBy,
+	); err != nil {
+		response.ServerError(c)
+		return
+	}
+
 	response.OK(c, gin.H{"message": "删除成功"})
 }
 
-// List 获取壁画的标注列表
 func (h *AnnotationHandler) List(c *gin.Context) {
 	annotations, err := h.svc.ListByMural(c.Param("id"), c.Query("imageLayer"))
 	if err != nil {
@@ -99,7 +154,6 @@ func (h *AnnotationHandler) List(c *gin.Context) {
 	response.OK(c, annotations)
 }
 
-// GetVersions 获取标注版本历史
 func (h *AnnotationHandler) GetVersions(c *gin.Context) {
 	snapshots, err := h.svc.GetSnapshots(c.Param("annotationId"))
 	if err != nil {

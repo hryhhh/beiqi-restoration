@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/hry/beiqi-mural-guardian/backend/internal/domain"
@@ -17,33 +18,67 @@ func NewAnnotationService(repo *repository.AnnotationRepository) *AnnotationServ
 	return &AnnotationService{repo: repo}
 }
 
-// Create 创建标注，自动裁剪坐标并计算面积
-func (s *AnnotationService) Create(a *model.DamageAnnotation, coords *domain.AnnotationCoordinates) error {
-	// 裁剪坐标到 [0,1]
+func (s *AnnotationService) Create(annotation *model.DamageAnnotation, coords *domain.AnnotationCoordinates) error {
 	domain.ClampCoordinates(coords)
 
-	// 计算面积
 	area := domain.PolygonArea(coords.Points)
-	pct := domain.AreaPercent(area)
-	a.Area = &area
-	a.AreaPercent = &pct
+	percent := domain.AreaPercent(area)
+	annotation.Area = &area
+	annotation.AreaPercent = &percent
 
-	// 序列化坐标
 	coordJSON, _ := json.Marshal(coords)
-	a.Coordinates = datatypes.JSON(coordJSON)
-	a.Version = 1
+	annotation.Coordinates = datatypes.JSON(coordJSON)
+	annotation.Version = 1
 
-	return s.repo.Create(a)
+	return s.repo.Create(annotation)
 }
 
-// Update 更新标注，先保存快照再更新
-func (s *AnnotationService) Update(id string, coords *domain.AnnotationCoordinates, damageType *model.DamageType, severity *int) (*model.DamageAnnotation, error) {
+func (s *AnnotationService) GetByID(id string) (*model.DamageAnnotation, error) {
+	return s.repo.GetByID(id)
+}
+
+func (s *AnnotationService) Update(
+	id string,
+	coords *domain.AnnotationCoordinates,
+	damageType *model.DamageType,
+	severity *int,
+	description *string,
+) (*model.DamageAnnotation, bool, error) {
 	existing, err := s.repo.GetByID(id)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	// 保存修改前的快照
+	changed := false
+	var coordJSON []byte
+
+	if coords != nil {
+		domain.ClampCoordinates(coords)
+		coordJSON, _ = json.Marshal(coords)
+		if !bytes.Equal(existing.Coordinates, coordJSON) {
+			changed = true
+		}
+	}
+	if damageType != nil && existing.DamageType != *damageType {
+		changed = true
+	}
+	if severity != nil && existing.Severity != *severity {
+		changed = true
+	}
+	if description != nil {
+		currentDescription := ""
+		if existing.Description != nil {
+			currentDescription = *existing.Description
+		}
+		if currentDescription != *description {
+			changed = true
+		}
+	}
+
+	if !changed {
+		return existing, false, nil
+	}
+
 	snapshot := &model.AnnotationSnapshot{
 		AnnotationID: id,
 		Version:      existing.Version,
@@ -52,17 +87,14 @@ func (s *AnnotationService) Update(id string, coords *domain.AnnotationCoordinat
 		Severity:     existing.Severity,
 	}
 	if err := s.repo.CreateSnapshot(snapshot); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	// 更新字段
 	if coords != nil {
-		domain.ClampCoordinates(coords)
 		area := domain.PolygonArea(coords.Points)
-		pct := domain.AreaPercent(area)
+		percent := domain.AreaPercent(area)
 		existing.Area = &area
-		existing.AreaPercent = &pct
-		coordJSON, _ := json.Marshal(coords)
+		existing.AreaPercent = &percent
 		existing.Coordinates = datatypes.JSON(coordJSON)
 	}
 	if damageType != nil {
@@ -71,9 +103,13 @@ func (s *AnnotationService) Update(id string, coords *domain.AnnotationCoordinat
 	if severity != nil {
 		existing.Severity = *severity
 	}
+	if description != nil {
+		existing.Description = description
+	}
 	existing.Version++
 
-	return existing, s.repo.Update(existing)
+	updated, saveErr := existing, s.repo.Update(existing)
+	return updated, true, saveErr
 }
 
 func (s *AnnotationService) Delete(id string) error {

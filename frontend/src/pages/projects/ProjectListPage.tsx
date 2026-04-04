@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Table, Tag, Select, Spin, Segmented, Card, Input, Progress, Popconfirm, message } from 'antd';
+import { Button, Table, Tag, Select, Spin, Segmented, Card, Input, Progress, Popconfirm, App } from 'antd';
 import {
   PlusOutlined, EyeOutlined, AppstoreOutlined, UnorderedListOutlined,
   SearchOutlined, ProjectOutlined, CheckCircleOutlined, DollarOutlined,
@@ -31,6 +31,7 @@ const BOARD_COLUMNS: { status: ProjectStatus; label: string; color: string }[] =
 ];
 
 export default function ProjectListPage() {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [total, setTotal] = useState(0);

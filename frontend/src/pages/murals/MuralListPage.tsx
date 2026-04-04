@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Button, Input, Select, Table, Card, Tag, Pagination, Empty, Spin, Space, Tooltip,
+  Button, Input, Select, Table, Card, Tag, Pagination, Empty, Spin, Space, Tooltip, Popconfirm, App,
 } from 'antd';
 import {
-  PlusOutlined, AppstoreOutlined, UnorderedListOutlined, SearchOutlined, EyeOutlined,
+  PlusOutlined, AppstoreOutlined, UnorderedListOutlined, SearchOutlined, EyeOutlined, DeleteOutlined,
 } from '@ant-design/icons';
 import { useMuralStore } from '@/stores/muralStore';
 import { MURAL_STATUS_MAP } from '@/constants';
+import { deleteMural } from '@/api/mural';
 import MuralFormModal from './MuralFormModal';
 import type { MuralRecord, MuralStatus } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
@@ -22,10 +23,21 @@ const statusColor: Record<MuralStatus, string> = {
 };
 
 export default function MuralListPage() {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const { murals, total, loading, params, viewMode, setParams, setViewMode, fetchMurals } = useMuralStore();
   const [formOpen, setFormOpen] = useState(false);
   const [search, setSearch] = useState('');
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteMural(id);
+      message.success('壁画已删除');
+      await fetchMurals();
+    } catch {
+      message.error('删除失败');
+    }
+  };
 
   useEffect(() => { fetchMurals(); }, [fetchMurals]);
 
@@ -45,11 +57,22 @@ export default function MuralListPage() {
     { title: '健康指数', dataIndex: 'healthIndex', key: 'healthIndex', width: 100,
       render: (v?: number) => v != null ? `${v}%` : '-',
     },
-    { title: '操作', key: 'action', width: 80,
+    { title: '操作', key: 'action', width: 120,
       render: (_, r) => (
-        <Tooltip title="查看详情">
-          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/murals/${r.id}`)} />
-        </Tooltip>
+        <Space size={0}>
+          <Tooltip title="查看详情">
+            <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/murals/${r.id}`)} />
+          </Tooltip>
+          <Popconfirm
+            title="确认删除这条壁画记录？"
+            description="将同时删除关联图像、标注、方案和历史记录。"
+            okText="删除"
+            cancelText="取消"
+            onConfirm={() => void handleDelete(r.id)}
+          >
+            <Button type="link" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -125,6 +148,36 @@ export default function MuralListPage() {
                     key={m.id}
                     hoverable
                     onClick={() => navigate(`/murals/${m.id}`)}
+                    actions={[
+                      <Button
+                        key="view"
+                        type="text"
+                        icon={<EyeOutlined />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/murals/${m.id}`);
+                        }}
+                      >
+                        查看
+                      </Button>,
+                      <Popconfirm
+                        key="delete"
+                        title="确认删除这条壁画记录？"
+                        description="将同时删除关联图像、标注、方案和历史记录。"
+                        okText="删除"
+                        cancelText="取消"
+                        onConfirm={() => void handleDelete(m.id)}
+                      >
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          删除
+                        </Button>
+                      </Popconfirm>,
+                    ]}
                     cover={
                       m.images?.[0] ? (
                         <div className="h-48 bg-gray-100 overflow-hidden">

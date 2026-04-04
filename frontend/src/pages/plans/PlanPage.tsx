@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  Card, Table, Tag, Button, Modal, Form, Input, Select, Spin, message, Tabs,
+  Card, Table, Tag, Button, Modal, Form, Input, Select, Spin, App, Tabs,
   Popconfirm,
 } from 'antd';
 import {
@@ -25,6 +25,7 @@ const statusColor: Record<PlanStatus, string> = {
 };
 
 export default function PlanPage() {
+  const { message } = App.useApp();
   const [searchParams] = useSearchParams();
   const annotationId = searchParams.get('annotationId') || undefined;
   const user = useAuthStore((s) => s.user);
@@ -213,7 +214,7 @@ export default function PlanPage() {
 
       {/* 创建方案弹窗 */}
       <Modal title="新建修复方案" open={createOpen} onOk={handleCreate}
-        onCancel={() => setCreateOpen(false)} destroyOnClose width={560}>
+        onCancel={() => setCreateOpen(false)} destroyOnHidden width={560}>
         <Form form={form} layout="vertical" className="mt-4"
           initialValues={{ annotationId: annotationId || '' }}>
           <Form.Item name="annotationId" label="关联病害标注 ID" rules={[{ required: true, message: '请输入病害标注 ID' }]}>
@@ -233,7 +234,7 @@ export default function PlanPage() {
 
       {/* 方案详情弹窗 */}
       <Modal title="方案详情" open={!!detailPlan} onCancel={() => setDetailPlan(null)}
-        footer={null} width={800} destroyOnClose>
+        footer={null} width={800} destroyOnHidden>
         {detailPlan && (
           <Tabs items={[
             {
@@ -311,7 +312,7 @@ export default function PlanPage() {
 
       {/* 审批弹窗 */}
       <Modal title="审批修复方案" open={reviewOpen} onOk={handleReview}
-        onCancel={() => setReviewOpen(false)} destroyOnClose>
+        onCancel={() => setReviewOpen(false)} destroyOnHidden>
         <Form form={reviewForm} layout="vertical" className="mt-4">
           <Form.Item name="result" label="审批结果" rules={[{ required: true, message: '请选择审批结果' }]}>
             <Select placeholder="选择审批结果" options={[

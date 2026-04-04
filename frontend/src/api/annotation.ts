@@ -20,6 +20,7 @@ export const updateAnnotation = (muralId: string, id: string, data: {
   damageType?: DamageType;
   severity?: number;
   coordinates?: AnnotationCoordinates;
+  description?: string;
 }) => put<DamageAnnotation>(`/murals/${muralId}/annotations/${id}`, data);
 
 /** 删除标注 */

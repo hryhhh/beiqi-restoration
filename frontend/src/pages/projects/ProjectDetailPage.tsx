@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Spin, Button, Tag, Tabs, Empty, message, Progress, Card, List, Popconfirm,
+  Spin, Button, Tag, Tabs, Empty, App, Progress, Card, List, Popconfirm,
   Input, InputNumber, Form, Modal, Table, Select, Upload,
 } from 'antd';
 import {
@@ -24,6 +24,7 @@ const taskColor: Record<TaskStatus, string> = {
 };
 
 export default function ProjectDetailPage() {
+  const { message } = App.useApp();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
@@ -190,7 +191,7 @@ export default function ProjectDetailPage() {
 
       {/* 新建任务弹窗 */}
       <Modal title="新建任务" open={taskModalOpen} onOk={handleAddTask}
-        onCancel={() => setTaskModalOpen(false)} destroyOnClose>
+        onCancel={() => setTaskModalOpen(false)} destroyOnHidden>
         <Form form={taskForm} layout="vertical" className="mt-4">
           <Form.Item name="title" label="任务标题" rules={[{ required: true }]}>
             <Input placeholder="任务标题" />
@@ -203,7 +204,7 @@ export default function ProjectDetailPage() {
 
       {/* 添加材料弹窗 */}
       <Modal title="添加材料消耗" open={materialModalOpen} onOk={handleAddMaterial}
-        onCancel={() => setMaterialModalOpen(false)} destroyOnClose>
+        onCancel={() => setMaterialModalOpen(false)} destroyOnHidden>
         <Form form={materialForm} layout="vertical" className="mt-4">
           <Form.Item name="name" label="材料名称" rules={[{ required: true }]}>
             <Input placeholder="如：丙烯酸树脂" />
@@ -224,7 +225,7 @@ export default function ProjectDetailPage() {
 
       {/* 任务分配弹窗 */}
       <Modal title="分配任务" open={assignModalOpen} onOk={handleAssign}
-        onCancel={() => setAssignModalOpen(false)} destroyOnClose>
+        onCancel={() => setAssignModalOpen(false)} destroyOnHidden>
         <Select
           mode="multiple" placeholder="选择负责人" className="w-full mt-4"
           value={selectedUserIds}

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -44,4 +45,30 @@ func (s *LocalStorage) FullPath(relPath string) string {
 // BaseDir 返回存储根目录
 func (s *LocalStorage) BaseDir() string {
 	return s.baseDir
+}
+
+// Delete 删除相对路径文件；文件不存在时视为成功
+func (s *LocalStorage) Delete(relPath string) error {
+	if relPath == "" {
+		return nil
+	}
+	fullPath := filepath.Join(s.baseDir, relPath)
+	err := os.Remove(fullPath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
+// DeleteDirIfEmpty 删除空目录；目录不存在或非空时静默忽略
+func (s *LocalStorage) DeleteDirIfEmpty(relDir string) error {
+	if relDir == "" {
+		return nil
+	}
+	fullPath := filepath.Join(s.baseDir, relDir)
+	err := os.Remove(fullPath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return nil
 }

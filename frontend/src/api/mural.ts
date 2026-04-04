@@ -1,8 +1,6 @@
-import { get, post, put } from './request';
-import type { MuralRecord, MuralHistory } from '@/types';
-import type { PaginatedResponse } from '@/types';
+import { del, get, post, put } from './request';
+import type { AssetType, MuralAsset, MuralHistory, MuralRecord, PaginatedResponse } from '@/types';
 
-/** 壁画列表筛选参数 */
 export interface MuralListParams {
   page?: number;
   pageSize?: number;
@@ -13,14 +11,11 @@ export interface MuralListParams {
   status?: string;
 }
 
-/** 获取壁画列表 */
 export const getMurals = (params?: MuralListParams) =>
   get<PaginatedResponse<MuralRecord>>('/murals', params as Record<string, unknown>);
 
-/** 获取壁画详情 */
 export const getMural = (id: string) => get<MuralRecord>(`/murals/${id}`);
 
-/** 创建壁画 */
 export const createMural = (data: {
   name: string;
   era: string;
@@ -31,18 +26,43 @@ export const createMural = (data: {
   description?: string;
 }) => post<MuralRecord>('/murals', data);
 
-/** 更新壁画 */
 export const updateMural = (id: string, data: Record<string, unknown>) =>
   put<MuralRecord>(`/murals/${id}`, data);
 
-/** 获取壁画修改历史 */
 export const getMuralHistory = (id: string) => get<MuralHistory[]>(`/murals/${id}/history`);
 
-/** 上传壁画图像 */
 export const uploadMuralImage = (id: string, file: File, imageType = 'visible') => {
   const form = new FormData();
   form.append('file', file);
   form.append('imageType', imageType);
-  // 直接用 axios 实例，因为需要 multipart/form-data
   return post<unknown>(`/murals/${id}/images`, form);
 };
+
+export const uploadMuralAsset = (
+  id: string,
+  file: File,
+  assetType: AssetType,
+  options?: { name?: string; makeDefault?: boolean },
+) => {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('assetType', assetType);
+  if (options?.name) {
+    form.append('name', options.name);
+  }
+  if (options?.makeDefault) {
+    form.append('makeDefault', 'true');
+  }
+  return post<MuralAsset>(`/murals/${id}/assets`, form);
+};
+
+export const deleteMural = (id: string) => del<{ message: string }>(`/murals/${id}`);
+
+export const deleteMuralImage = (muralId: string, imageId: string) =>
+  del<{ message: string }>(`/murals/${muralId}/images/${imageId}`);
+
+export const deleteMuralAsset = (muralId: string, assetId: string) =>
+  del<{ message: string }>(`/murals/${muralId}/assets/${assetId}`);
+
+export const setDefaultMuralAsset = (muralId: string, assetId: string) =>
+  put<MuralAsset>(`/murals/${muralId}/assets/${assetId}/default`);

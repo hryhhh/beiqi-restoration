@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { message } from 'antd';
+import { App } from 'antd';
 import * as api from '@/api/annotation';
 import type { DamageAnnotation, AnnotationCoordinates, DamageType } from '@/types';
 import type { ImageType } from '@/types';
@@ -8,6 +8,7 @@ import type { ImageType } from '@/types';
 export type DrawMode = 'polygon' | 'rect' | 'path' | null;
 
 export function useAnnotation(muralId: string) {
+  const { message } = App.useApp();
   const [annotations, setAnnotations] = useState<DamageAnnotation[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeLayer, setActiveLayer] = useState<ImageType>('visible');
@@ -58,7 +59,12 @@ export function useAnnotation(muralId: string) {
   /** 更新标注 */
   const editAnnotation = useCallback(async (
     id: string,
-    data: { damageType?: DamageType; severity?: number; coordinates?: AnnotationCoordinates },
+    data: {
+      damageType?: DamageType;
+      severity?: number;
+      coordinates?: AnnotationCoordinates;
+      description?: string;
+    },
   ) => {
     try {
       await api.updateAnnotation(muralId, id, data);

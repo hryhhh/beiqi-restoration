@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Input, Card, Empty, Spin, Tag, Button, Modal, Form, Select, message, Pagination, Popconfirm,
+  Input, Card, Empty, Spin, Tag, Button, Modal, Form, Select, App, Pagination, Popconfirm,
 } from 'antd';
 import {
   SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined,
@@ -22,6 +22,7 @@ const categoryColors: Record<DocCategory, string> = {
 };
 
 export default function KnowledgePage() {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
   const [total, setTotal] = useState(0);
@@ -211,7 +212,7 @@ export default function KnowledgePage() {
       {/* 创建/编辑文档弹窗 */}
       <Modal title={editingDoc ? '编辑文档' : '上传文档'} open={formOpen} onOk={handleSubmit}
         onCancel={() => { setFormOpen(false); setEditingDoc(null); form.resetFields(); }}
-        destroyOnClose width={640}>
+        destroyOnHidden width={640}>
         <Form form={form} layout="vertical" className="mt-4">
           <Form.Item name="title" label="标题" rules={[{ required: true, message: '请输入文档标题' }]}>
             <Input placeholder="文档标题" />

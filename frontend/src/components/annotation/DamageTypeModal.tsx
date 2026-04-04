@@ -29,7 +29,7 @@ export default function DamageTypeModal({ open, onConfirm, onCancel }: Props) {
       onOk={handleOk}
       onCancel={() => { form.resetFields(); onCancel(); }}
       confirmLoading={loading}
-      destroyOnClose
+      destroyOnHidden
       width={400}
     >
       <Form form={form} layout="vertical" initialValues={{ severity: 3 }} className="mt-4">

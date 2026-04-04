@@ -22,6 +22,10 @@ html {
   scroll-behavior: smooth;
 }
 
+.mural-detail-tabs--model-active .ant-tabs-content-holder {
+  display: none;
+}
+
 /* ===== 登录页 ===== */
 
 .login-page {
@@ -82,8 +86,8 @@ html {
 }
 
 .brand-logo-img {
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
   border-radius: 4px;
   flex-shrink: 0;
@@ -359,14 +363,14 @@ html {
 /* ===== 玻璃拟态导航栏 ===== */
 
 .glass-header {
-  background: rgba(255,253,249,0.72);
+  background: rgba(255,253,249,0.1);
   backdrop-filter: blur(16px) saturate(1.4);
   -webkit-backdrop-filter: blur(16px) saturate(1.4);
   border-bottom: 1px solid rgba(232,223,210,0.5);
   transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 .glass-header.scrolled {
-  background: rgba(255,253,249,0.92);
+  background: rgba(255,253,249,0.17);
   box-shadow: 0 2px 20px rgba(63,46,30,0.06);
 }
 
@@ -818,6 +822,12 @@ html {
 .main-sider-transparent .ant-menu-light .ant-menu-sub,
 .main-sider-transparent .ant-menu {
   background: transparent !important;
+}
+
+.main-sider-transparent,
+.main-sider-transparent .ant-layout-sider-children,
+.main-sider-transparent .ant-menu {
+  overflow-x: hidden;
 }
 
 /* 侧边栏折叠触发器也透明 */

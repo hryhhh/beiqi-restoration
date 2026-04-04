@@ -165,3 +165,40 @@ docker compose down -v
 
 5. 问答始终降级
 - 检查 `LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL` 是否配置正确。
+
+## 11. 开发环境角色账号初始化（可选）
+
+当 `users` 为空时，可一次性创建 5 个权限角色账号（`admin`、`chief_restorer`、`assistant`、`researcher`、`reviewer`）。
+
+```bash
+docker exec beiqi-postgres psql -U beiqi -d beiqi_mural -c "
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+INSERT INTO users (username, email, password, role, created_at, updated_at) VALUES
+('admin', 'admin@example.com', crypt('Admin@123456', gen_salt('bf')), 'admin', now(), now()),
+('chief', 'chief@example.com', crypt('Chief@123456', gen_salt('bf')), 'chief_restorer', now(), now()),
+('assistant', 'assistant@example.com', crypt('Assistant@123456', gen_salt('bf')), 'assistant', now(), now()),
+('researcher', 'researcher@example.com', crypt('Researcher@123456', gen_salt('bf')), 'researcher', now(), now()),
+('reviewer', 'reviewer@example.com', crypt('Reviewer@123456', gen_salt('bf')), 'reviewer', now(), now())
+ON CONFLICT (username) DO UPDATE
+SET email = EXCLUDED.email,
+    password = EXCLUDED.password,
+    role = EXCLUDED.role,
+    updated_at = now();
+"
+```
+
+校验账号：
+
+```bash
+docker exec beiqi-postgres psql -U beiqi -d beiqi_mural -c "select username, email, role from users order by username;"
+```
+
+默认账号与密码（仅开发环境）：
+
+- `admin` / `Admin@123456`
+- `chief` / `Chief@123456`
+- `assistant` / `Assistant@123456`
+- `researcher` / `Researcher@123456`
+- `reviewer` / `Reviewer@123456`
+
+建议首次登录后立即修改密码。

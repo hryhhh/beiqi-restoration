@@ -19,7 +19,7 @@ func (r *MuralRepository) Create(m *model.Mural) error {
 
 func (r *MuralRepository) GetByID(id string) (*model.Mural, error) {
 	var m model.Mural
-	err := r.db.Preload("Images").Preload("Annotations").First(&m, "id = ?", id).Error
+	err := r.db.Preload("Images").Preload("Assets").Preload("Annotations").First(&m, "id = ?", id).Error
 	return &m, err
 }
 
@@ -52,6 +52,7 @@ func (r *MuralRepository) List(params MuralListParams) ([]model.Mural, int64, er
 
 	var murals []model.Mural
 	err := query.Preload("Images").
+		Preload("Assets").
 		Offset((params.Page - 1) * params.PageSize).
 		Limit(params.PageSize).
 		Order("created_at DESC").

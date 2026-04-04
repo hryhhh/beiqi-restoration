@@ -17,9 +17,9 @@ import { useAuthStore } from '@/stores/authStore';
 import { USER_ROLE_MAP } from '@/constants';
 import type { UserRole } from '@/types';
 import bgImage from '@/assets/images/background.png';
+import brandLogo from '../assets/logo.jpg';
 
 const { Sider, Header, Content } = Layout;
-const brandLogo = '/logo.jpg';
 
 /** 菜单项配置 */
 interface MenuItem {
@@ -74,7 +74,16 @@ export default function MainLayout() {
         onCollapse={setCollapsed}
         theme="light"
         className="border-r border-gray-200 main-sider-transparent"
-        style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'auto', background: 'rgba(255,255,255,0.65)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+        style={{
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          background: 'rgba(255,255,255,0.65)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
       >
         <div
           className="flex items-center justify-center border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"

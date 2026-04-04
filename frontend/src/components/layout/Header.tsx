@@ -4,8 +4,7 @@ import { Button } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
 import { USER_ROLE_MAP } from '@/constants';
-
-const brandLogo = '/logo.jpg';
+import brandLogo from '../../assets/logo.jpg';
 
 /** 顶部导航栏 — 玻璃拟态风格 */
 export default function Header() {
