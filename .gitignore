@@ -23,6 +23,9 @@ tmp/
 # 日志
 *.log
 
+# 本地协作与脑暴产物
+.superpowers/
+
 # 上传文件
 backend/uploads/*
 !backend/uploads/.gitkeep
