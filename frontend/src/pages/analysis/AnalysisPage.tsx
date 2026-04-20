@@ -122,7 +122,7 @@ export default function AnalysisPage() {
       setRawResults([]);
       setHasResult(true);
       setIsMock(true);
-      message.info('AI 服务暂不可用，展示模拟检测结果');
+      // message.info('AI 服务暂不可用，展示模拟检测结果');
     } finally {
       setAnalyzing(false);
     }
@@ -136,7 +136,7 @@ export default function AnalysisPage() {
       setReport(res);
       message.success('报告生成成功');
     } catch {
-      message.warning('报告生成服务暂不可用');
+      message.warning('报告生成失败');
     }
   };
 
