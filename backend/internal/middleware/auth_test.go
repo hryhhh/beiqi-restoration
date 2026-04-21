@@ -32,6 +32,13 @@ func TestProperty7_RolePermissionMapping(t *testing.T) {
 		{"/api/knowledge/upload", []model.UserRole{model.RoleAdmin}},
 		// 壁画创建：管理员 + 首席修复师
 		{"/api/murals/create", []model.UserRole{model.RoleAdmin, model.RoleChiefRestorer}},
+		// 壁画图像上传：管理员 + 首席修复师 + 助理修复师 + 研究员
+		{"/api/murals/upload-image", []model.UserRole{
+			model.RoleAdmin,
+			model.RoleChiefRestorer,
+			model.RoleAssistant,
+			model.RoleResearcher,
+		}},
 		// 方案审批：仅审核员
 		{"/api/plans/review", []model.UserRole{model.RoleReviewer}},
 		// 标注创建：管理员 + 首席修复师 + 助理修复师 + 研究员
@@ -78,7 +85,7 @@ func TestProperty7_RolePermissionMapping(t *testing.T) {
 			}
 			return w.Code == http.StatusForbidden
 		},
-		gen.IntRange(0, 4),
+		gen.IntRange(0, 5),
 		gen.IntRange(0, 4),
 	))
 

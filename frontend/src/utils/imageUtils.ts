@@ -41,3 +41,21 @@ export function polygonArea(points: number[][]): number {
 export function areaPercent(area: number): number {
   return area * 100;
 }
+
+export function getCoordinateBounds(points: number[][]) {
+  const xs = points.map((point) => point[0]);
+  const ys = points.map((point) => point[1]);
+
+  return {
+    minX: Math.min(...xs),
+    minY: Math.min(...ys),
+    maxX: Math.max(...xs),
+    maxY: Math.max(...ys),
+  };
+}
+
+export async function imageUrlToFile(imageUrl: string, filename: string): Promise<File> {
+  const response = await fetch(imageUrl);
+  const blob = await response.blob();
+  return new File([blob], filename, { type: blob.type || 'image/png' });
+}

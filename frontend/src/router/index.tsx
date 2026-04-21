@@ -96,6 +96,23 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  {
+    element: <ProtectedRoute roles={['admin', 'chief_restorer', 'assistant', 'researcher']} />,
+    children: [
+      {
+        element: <MainLayout />,
+        children: [
+          {
+            path: '/restoration',
+            lazy: async () => {
+              const { default: C } = await import('@/pages/restoration/RestorationPage');
+              return { Component: C };
+            },
+          },
+        ],
+      },
+    ],
+  },
 
   // 仅管理员
   {

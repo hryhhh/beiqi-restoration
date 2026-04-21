@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { RestorationPreflightInput } from '@/types';
 
 /** 壁画状态枚举 */
 const muralStatusSchema = z.enum([
@@ -48,6 +49,34 @@ export const annotationSchema = z.object({
 
 /** 标注表单输入类型 */
 export type AnnotationFormData = z.infer<typeof annotationSchema>;
+
+export const restorationParametersSchema = z.object({
+  restorationStrength: z.number().min(0).max(100),
+  cleaningLevel: z.number().min(0).max(100),
+  colorRecovery: z.number().min(0).max(100),
+  detailPreservation: z.number().min(0).max(100),
+  crackRepairBias: z.number().min(0).max(100),
+  structureClosure: z.number().min(0).max(100),
+  structureFill: z.number().min(0).max(100),
+  edgeBlend: z.number().min(0).max(100),
+  stainRemoval: z.number().min(0).max(100),
+  moldSuppression: z.number().min(0).max(100),
+  saltReduction: z.number().min(0).max(100),
+  toneCorrection: z.number().min(0).max(100),
+  localColorRepair: z.number().min(0).max(100),
+  textureRebuild: z.number().min(0).max(100),
+  outputPreference: z.enum(['clarity', 'fidelity']),
+  randomness: z.number().min(0).max(100),
+});
+
+export function getRestorationSubmitError(input: RestorationPreflightInput): string | null {
+  if (!input.muralId) return '请先选择壁画';
+  if (!input.hasSourceImage) return '请先上传待修复原图';
+  if (input.mode === 'partial' && input.annotationIds.length === 0 && !input.manualSelection) {
+    return '局部精修需要至少一条已有标注或一个手动选区';
+  }
+  return null;
+}
 
 /**
  * 校验壁画 JSON 数据，返回字段级错误信息

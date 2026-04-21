@@ -1,0 +1,145 @@
+.restoration-page {
+  display: grid;
+  gap: 16px;
+}
+
+.restoration-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 16px;
+}
+
+.restoration-card {
+  border-radius: 20px;
+  border: 1px solid rgba(143, 98, 69, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 248, 238, 0.94), rgba(252, 246, 238, 0.98)),
+    radial-gradient(circle at top right, rgba(185, 135, 94, 0.12), transparent 38%);
+  box-shadow: 0 18px 48px rgba(88, 54, 31, 0.08);
+}
+
+.restoration-context {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+  gap: 16px;
+}
+
+.restoration-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.restoration-summary-item {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(140, 98, 70, 0.08);
+}
+
+.restoration-summary-label {
+  font-size: 12px;
+  color: #8d735d;
+  margin-bottom: 4px;
+}
+
+.restoration-summary-value {
+  color: #4d3527;
+  font-weight: 600;
+}
+
+.restoration-params-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.restoration-slider-row {
+  padding: 8px 0;
+}
+
+.restoration-slider-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: #5f4636;
+  font-size: 13px;
+}
+
+.restoration-upload {
+  min-height: 240px;
+}
+
+.restoration-upload .ant-upload,
+.restoration-upload .ant-upload-drag {
+  height: 100%;
+}
+
+.restoration-upload-hint {
+  color: #8d735d;
+}
+
+.restoration-source-preview {
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 16px;
+  border: 1px solid rgba(143, 98, 69, 0.16);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.restoration-annotation-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.restoration-selection {
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(143, 98, 69, 0.16);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.restoration-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.restoration-variant-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.restoration-variant {
+  width: 112px;
+  height: 84px;
+  border-radius: 12px;
+  border: 1px solid rgba(143, 98, 69, 0.18);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0;
+  cursor: pointer;
+}
+
+.restoration-variant img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.restoration-variant--active {
+  border-color: #b5564a;
+  box-shadow: 0 0 0 2px rgba(181, 86, 74, 0.2);
+}
+
+@media (max-width: 1120px) {
+  .restoration-grid,
+  .restoration-context,
+  .restoration-params-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -2,42 +2,17 @@ import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Dropdown, Avatar } from 'antd';
 import {
-  DashboardOutlined,
-  PictureOutlined,
-  ToolOutlined,
-  ExperimentOutlined,
-  BookOutlined,
-  SettingOutlined,
-  SolutionOutlined,
   UserOutlined,
   LogoutOutlined,
   HomeOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
 import { USER_ROLE_MAP } from '@/constants';
-import type { UserRole } from '@/types';
+import { buildMenuItems, getSelectedMenuKey } from '@/layouts/navigation';
 import bgImage from '@/assets/images/background.png';
 import brandLogo from '../assets/logo.jpg';
 
 const { Sider, Header, Content } = Layout;
-
-/** 菜单项配置 */
-interface MenuItem {
-  key: string;
-  icon: React.ReactNode;
-  label: string;
-  roles?: UserRole[]; // 不设置则所有角色可见
-}
-
-const menuItems: MenuItem[] = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
-  { key: '/murals', icon: <PictureOutlined />, label: '壁画库' },
-  { key: '/projects', icon: <ToolOutlined />, label: '修复项目' },
-  { key: '/plans', icon: <SolutionOutlined />, label: '修复方案' },
-  { key: '/analysis', icon: <ExperimentOutlined />, label: '图像分析' },
-  { key: '/knowledge', icon: <BookOutlined />, label: '知识库' },
-  { key: '/admin', icon: <SettingOutlined />, label: '管理后台', roles: ['admin'] },
-];
 
 /** 主布局（侧边栏 + 内容区） */
 export default function MainLayout() {
@@ -48,9 +23,7 @@ export default function MainLayout() {
   const logout = useAuthStore((s) => s.logout);
 
   // 根据角色过滤菜单
-  const visibleItems = menuItems
-    .filter((item) => !item.roles || (user && item.roles.includes(user.role)))
-    .map(({ key, icon, label }) => ({ key, icon, label }));
+  const visibleItems = buildMenuItems(user?.role);
 
   return (
     <Layout className="min-h-screen" style={{ position: 'relative' }}>
@@ -98,7 +71,7 @@ export default function MainLayout() {
         </div>
         <Menu
           mode="inline"
-          selectedKeys={[location.pathname]}
+          selectedKeys={[getSelectedMenuKey(location.pathname)]}
           items={visibleItems}
           onClick={({ key }) => navigate(key)}
         />

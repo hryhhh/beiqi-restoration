@@ -75,7 +75,7 @@ func main() {
 		murals.POST("", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), muralHandler.Create)
 		murals.PUT("/:id", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), muralHandler.Update)
 		murals.DELETE("/:id", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), muralHandler.Delete)
-		murals.POST("/:id/images", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), imageHandler.Upload)
+		murals.POST("/:id/images", middleware.RequireRoles(middleware.RestorationImageUploadRoles()...), imageHandler.Upload)
 		murals.DELETE("/:id/images/:imageId", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), imageHandler.Delete)
 		murals.POST("/:id/assets", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), assetHandler.Upload)
 		murals.DELETE("/:id/assets/:assetId", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), assetHandler.Delete)
