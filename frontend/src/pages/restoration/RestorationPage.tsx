@@ -17,13 +17,16 @@ import {
 } from 'antd';
 import { CloudUploadOutlined } from '@ant-design/icons';
 import { getAnnotations } from '@/api/annotation';
-import { getMurals, uploadMuralImage } from '@/api/mural';
-import { generateRestoration } from '@/api/restoration';
+import { getMurals } from '@/api/mural';
+import {
+  commitRestorationResult,
+  createRestorationRun,
+  createRestorationVariant,
+} from '@/api/restoration';
 import RestorationSelectionCanvas from '@/components/restoration/RestorationSelectionCanvas';
 import ComparisonView from '@/components/comparison/ComparisonView';
 import { DAMAGE_TYPE_MAP, MURAL_STATUS_MAP } from '@/constants';
 import {
-  buildSaveFileName,
   createInitialRestorationParameters,
   getStartDisabledReason,
   resetSessionForMuralChange,
@@ -37,7 +40,6 @@ import type {
   RestorationParameters,
   RestorationResult,
 } from '@/types';
-import { imageUrlToFile } from '@/utils/imageUtils';
 import './restoration.css';
 
 const { Title, Paragraph, Text } = Typography;
@@ -93,10 +95,12 @@ export default function RestorationPage() {
   const [selectedMuralId, setSelectedMuralId] = useState('');
   const [mode, setMode] = useState<RestorationMode>('full');
   const [parameters, setParameters] = useState(createInitialRestorationParameters());
+  const [sourceImageFile, setSourceImageFile] = useState<File | null>(null);
   const [sourceImageUrl, setSourceImageUrl] = useState('');
   const [annotations, setAnnotations] = useState<DamageAnnotation[]>([]);
   const [selectedAnnotationIds, setSelectedAnnotationIds] = useState<string[]>([]);
   const [manualSelection, setManualSelection] = useState<AnnotationCoordinates | null>(null);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [currentResult, setCurrentResult] = useState<RestorationResult | null>(null);
   const [variants, setVariants] = useState<RestorationResult[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -156,9 +160,11 @@ export default function RestorationPage() {
     });
 
     setSelectedMuralId(value);
+    setSourceImageFile(null);
     setSourceImageUrl(reset.sourceImageUrl);
     setSelectedAnnotationIds(reset.selectedAnnotationIds);
     setManualSelection(reset.manualSelection);
+    setActiveRunId(null);
     setCurrentResult(null);
     setVariants([]);
   };
@@ -173,8 +179,10 @@ export default function RestorationPage() {
       URL.revokeObjectURL(sourceImageUrl);
     }
 
+    setSourceImageFile(file);
     setSourceImageUrl(URL.createObjectURL(file));
     setManualSelection(null);
+    setActiveRunId(null);
     setCurrentResult(null);
     setVariants([]);
     return false;
@@ -192,40 +200,43 @@ export default function RestorationPage() {
     label: `${DAMAGE_TYPE_MAP[annotation.damageType]?.label || annotation.damageType} · 严重度 ${annotation.severity}`,
   }));
 
-  const selectedAnnotationShapes = useMemo(
-    () => annotations
-      .filter((item) => selectedAnnotationIds.includes(item.id))
-      .map((item) => item.coordinates),
-    [annotations, selectedAnnotationIds],
-  );
-
   const handleGenerate = async (variantBase: RestorationResult | null = null) => {
-    if (startDisabledReason || !sourceImageUrl || !selectedMuralId) {
+    if (startDisabledReason || !selectedMuralId) {
       if (startDisabledReason) {
         message.warning(startDisabledReason);
       }
       return;
     }
+    if (!variantBase && !sourceImageFile) {
+      message.warning('请先上传待修复原图');
+      return;
+    }
+    if (variantBase && !activeRunId) {
+      message.warning('请先生成主结果');
+      return;
+    }
 
     setGenerating(true);
     try {
-      const result = await generateRestoration({
-        muralId: selectedMuralId,
-        mode,
-        sourceImageUrl,
-        parameters,
-        annotationShapes: selectedAnnotationShapes,
-        annotationIds: selectedAnnotationIds,
-        manualSelection,
-        variantBase,
-      });
-
-      if (variantBase) {
-        setVariants((previous) => [...previous, result]);
-        setCurrentResult(result);
+      if (variantBase && activeRunId) {
+        const detail = await createRestorationVariant(activeRunId, variantBase.id);
+        setActiveRunId(detail.run.id);
+        setCurrentResult(detail.currentResult);
+        setVariants(detail.variants);
+        message.success(detail.currentResult?.isMock ? '已生成新的修复变体（服务端 mock）' : '已生成新的修复变体');
       } else {
-        setCurrentResult(result);
-        setVariants([]);
+        const detail = await createRestorationRun({
+          muralId: selectedMuralId,
+          mode,
+          sourceFile: sourceImageFile!,
+          parameters,
+          annotationIds: selectedAnnotationIds,
+          manualSelection,
+        });
+        setActiveRunId(detail.run.id);
+        setCurrentResult(detail.currentResult);
+        setVariants(detail.variants);
+        message.success(detail.currentResult?.isMock ? '已生成修复结果（服务端 mock）' : '已生成修复结果');
       }
     } catch {
       message.error('修复结果生成失败');
@@ -241,12 +252,12 @@ export default function RestorationPage() {
 
     setSaving(true);
     try {
-      const file = await imageUrlToFile(
-        currentResult.imageUrl,
-        buildSaveFileName(selectedMuralId, new Date()),
-      );
-      await uploadMuralImage(selectedMuralId, file, 'restored');
-      message.success(currentResult.isMock ? '演示结果已保存为修复后图层' : '修复结果已保存为修复后图层');
+      const committed = await commitRestorationResult(currentResult.id);
+      setCurrentResult(committed.result);
+      setVariants((previous) => previous.map((item) => (
+        item.id === committed.result.id ? committed.result : item
+      )));
+      message.success(committed.result.isMock ? '服务端 mock 结果已保存为修复后图层' : '修复结果已保存为修复后图层');
       navigate(`/murals/${selectedMuralId}`);
     } catch {
       message.error('保存修复结果失败');
@@ -260,7 +271,7 @@ export default function RestorationPage() {
       <div>
         <Title level={2} style={{ marginBottom: 8 }}>壁画修复工作台</Title>
         <Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          选择壁画、上传待修复原图、调整参数并生成修复结果。当前优先保证完整闭环，真实接口不可用时会降级到演示模式。
+          选择壁画、上传待修复原图、调整参数并生成修复结果。当前流程已接到后端 run / result / commit API，真实 provider 不可用时会由服务端 mock 托底。
         </Paragraph>
       </div>
 
@@ -447,7 +458,9 @@ export default function RestorationPage() {
           className="restoration-card"
           title="结果区"
           extra={currentResult
-            ? <Tag color={currentResult.isMock ? 'gold' : 'green'}>{currentResult.isMock ? '演示模式' : '真实生成'}</Tag>
+            ? <Tag color={currentResult.committedMuralImageId ? 'cyan' : currentResult.isMock ? 'gold' : 'green'}>
+              {currentResult.committedMuralImageId ? '已保存' : currentResult.isMock ? '服务端 Mock' : '真实生成'}
+            </Tag>
             : null}
         >
           {currentResult ? (
@@ -488,7 +501,7 @@ export default function RestorationPage() {
           再次生成变体
         </Button>
         <Button
-          disabled={!currentResult}
+          disabled={!currentResult || !!currentResult.committedMuralImageId}
           loading={saving}
           onClick={() => void handleSave()}
         >
