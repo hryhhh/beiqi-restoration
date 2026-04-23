@@ -72,10 +72,10 @@ func main() {
 		murals.GET("/:id", muralHandler.GetByID)
 		murals.GET("/:id/history", muralHandler.GetHistory)
 		// 创建/编辑：管理员 + 首席修复师
-		murals.POST("", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), muralHandler.Create)
-		murals.PUT("/:id", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), muralHandler.Update)
-		murals.DELETE("/:id", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), muralHandler.Delete)
-		murals.POST("/:id/images", middleware.RequireRoles(middleware.RestorationImageUploadRoles()...), imageHandler.Upload)
+		murals.POST("", middleware.RequireRoles(middleware.MuralManageRoles()...), muralHandler.Create)
+		murals.PUT("/:id", middleware.RequireRoles(middleware.MuralManageRoles()...), muralHandler.Update)
+		murals.DELETE("/:id", middleware.RequireRoles(middleware.MuralManageRoles()...), muralHandler.Delete)
+		murals.POST("/:id/images", middleware.RequireRoles(middleware.MuralImageUploadRoles()...), imageHandler.Upload)
 		murals.DELETE("/:id/images/:imageId", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), imageHandler.Delete)
 		murals.POST("/:id/assets", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), assetHandler.Upload)
 		murals.DELETE("/:id/assets/:assetId", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), assetHandler.Delete)
@@ -91,9 +91,9 @@ func main() {
 	annotations := murals.Group("/:id/annotations")
 	{
 		annotations.GET("", annoHandler.List)
-		annotations.POST("", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer, model.RoleAssistant, model.RoleResearcher), annoHandler.Create)
-		annotations.PUT("/:annotationId", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer, model.RoleAssistant, model.RoleResearcher), annoHandler.Update)
-		annotations.DELETE("/:annotationId", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer, model.RoleAssistant, model.RoleResearcher), annoHandler.Delete)
+		annotations.POST("", middleware.RequireRoles(middleware.AnnotationWriteRoles()...), annoHandler.Create)
+		annotations.PUT("/:annotationId", middleware.RequireRoles(middleware.AnnotationWriteRoles()...), annoHandler.Update)
+		annotations.DELETE("/:annotationId", middleware.RequireRoles(middleware.AnnotationWriteRoles()...), annoHandler.Delete)
 		annotations.GET("/:annotationId/versions", annoHandler.GetVersions)
 	}
 
@@ -124,7 +124,7 @@ func main() {
 		plans.GET("/:id", planHandler.GetByID)
 		plans.POST("", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer, model.RoleAssistant, model.RoleResearcher), planHandler.Create)
 		plans.PUT("/:id", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer, model.RoleAssistant, model.RoleResearcher), planHandler.UpdateStatus)
-		plans.POST("/:id/review", middleware.RequireRoles(model.RoleReviewer), planHandler.Review)
+		plans.POST("/:id/review", middleware.RequireRoles(middleware.PlanReviewRoles()...), planHandler.Review)
 		plans.PUT("/:id/content", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer, model.RoleAssistant, model.RoleResearcher), planHandler.UpdateContent)
 		plans.DELETE("/:id", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer), planHandler.Delete)
 		plans.POST("/:id/image", middleware.RequireRoles(model.RoleAdmin, model.RoleChiefRestorer, model.RoleAssistant), planHandler.UploadImage)
@@ -160,14 +160,14 @@ func main() {
 		knowledge.POST("/qa", knowledgeHandler.Ask)
 		knowledge.POST("/qa/stream", knowledgeHandler.AskStream)
 		knowledge.GET("/:id", knowledgeHandler.GetByID)
-		knowledge.POST("", middleware.RequireRoles(model.RoleAdmin), knowledgeHandler.Create)
+		knowledge.POST("", middleware.RequireRoles(middleware.AdminOnlyRoles()...), knowledgeHandler.Create)
 		knowledge.PUT("/:id", middleware.RequireRoles(model.RoleAdmin), knowledgeHandler.Update)
 		knowledge.DELETE("/:id", middleware.RequireRoles(model.RoleAdmin), knowledgeHandler.Delete)
 	}
 
 	// 管理后台模块
 	adminHandler := handler.NewAdminHandler(db, &cfg.Database)
-	admin := api.Group("/admin").Use(middleware.RequireRoles(model.RoleAdmin))
+	admin := api.Group("/admin").Use(middleware.RequireRoles(middleware.AdminOnlyRoles()...))
 	{
 		admin.GET("/users", adminHandler.ListUsers)
 		admin.PUT("/users/:id/role", adminHandler.UpdateRole)
