@@ -18,11 +18,12 @@ import (
 )
 
 var (
-	ErrMissingSourceFile     = errors.New("missing_source_file")
-	ErrMissingMuralID        = errors.New("missing_mural_id")
-	ErrPartialNeedsSelection = errors.New("partial_needs_selection")
-	ErrMissingStorage        = errors.New("missing_storage")
-	ErrMissingProvider       = errors.New("missing_provider")
+	ErrMissingSourceFile      = errors.New("missing_source_file")
+	ErrMissingMuralID         = errors.New("missing_mural_id")
+	ErrPartialNeedsSelection  = errors.New("partial_needs_selection")
+	ErrMissingStorage         = errors.New("missing_storage")
+	ErrMissingProvider        = errors.New("missing_provider")
+	ErrResultAlreadyCommitted = errors.New("result_already_committed")
 )
 
 type GenerateRunInput struct {
@@ -47,6 +48,12 @@ type RestorationDetail struct {
 	Results       []model.RestorationResult `json:"results"`
 	CurrentResult model.RestorationResult   `json:"currentResult"`
 	Variants      []model.RestorationResult `json:"variants"`
+}
+
+type CommitResultResponse struct {
+	Run        model.RestorationRun    `json:"run"`
+	Result     model.RestorationResult `json:"result"`
+	MuralImage model.MuralImage        `json:"muralImage"`
 }
 
 type RestorationService struct {
@@ -238,6 +245,58 @@ func (s *RestorationService) GetRunDetail(runID string) (*RestorationDetail, err
 
 func (s *RestorationService) ListRuns(muralID string, limit int) ([]model.RestorationRun, error) {
 	return s.repo.ListRuns(muralID, limit)
+}
+
+func (s *RestorationService) CommitResult(resultID, changedBy string) (*CommitResultResponse, error) {
+	if s.storage == nil {
+		return nil, ErrMissingStorage
+	}
+
+	result, run, err := s.repo.GetResultWithRun(resultID)
+	if err != nil {
+		return nil, err
+	}
+	if result.CommittedMuralImageID != nil {
+		return nil, ErrResultAlreadyCommitted
+	}
+
+	data, err := s.storage.Read(result.ImagePath)
+	if err != nil {
+		return nil, err
+	}
+	ext := filepath.Ext(result.ImagePath)
+	if ext == "" {
+		ext = ".png"
+	}
+	relPath, err := s.storage.Save(filepath.Join("murals", run.MuralID), "restored-"+result.ID+ext, bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	width, height := result.Width, result.Height
+	if width == 0 || height == 0 {
+		width, height = decodeImageSize(data)
+	}
+
+	image := &model.MuralImage{
+		ID:        uuid.NewString(),
+		MuralID:   run.MuralID,
+		FilePath:  relPath,
+		FileHash:  result.ImageHash,
+		ImageType: model.ImageRestored,
+		Width:     width,
+		Height:    height,
+		FileSize:  int64(len(data)),
+	}
+	if err := s.repo.CommitResult(run, result, image, fallbackChangedBy(changedBy)); err != nil {
+		return nil, err
+	}
+
+	return &CommitResultResponse{
+		Run:        *run,
+		Result:     *result,
+		MuralImage: *image,
+	}, nil
 }
 
 func (s *RestorationService) saveGeneratedImage(subDir, resultID string, generated *GeneratedImage) (string, string, error) {

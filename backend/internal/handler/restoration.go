@@ -122,6 +122,15 @@ func (h *RestorationHandler) CreateVariant(c *gin.Context) {
 	response.Created(c, detail)
 }
 
+func (h *RestorationHandler) CommitResult(c *gin.Context) {
+	result, err := h.service.CommitResult(c.Param("id"), currentUserID(c))
+	if err != nil {
+		writeRestorationError(c, err)
+		return
+	}
+	response.OK(c, result)
+}
+
 func writeRestorationError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, service.ErrMissingMuralID):
@@ -130,6 +139,8 @@ func writeRestorationError(c *gin.Context, err error) {
 		response.BadRequest(c, "缺少原图文件")
 	case errors.Is(err, service.ErrPartialNeedsSelection):
 		response.BadRequest(c, "局部精修需要选择标注或手工选区")
+	case errors.Is(err, service.ErrResultAlreadyCommitted):
+		response.Conflict(c, "该修复结果已经保存为修复后图像")
 	case errors.Is(err, gorm.ErrRecordNotFound):
 		response.NotFound(c, "修复记录")
 	default:

@@ -1,6 +1,9 @@
 package repository
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/hry/beiqi-mural-guardian/backend/internal/model"
 	"gorm.io/gorm"
 )
@@ -55,6 +58,19 @@ func (r *RestorationRepository) GetResultInRun(runID, resultID string) (*model.R
 	return &result, err
 }
 
+func (r *RestorationRepository) GetResultWithRun(resultID string) (*model.RestorationResult, *model.RestorationRun, error) {
+	var result model.RestorationResult
+	if err := r.db.First(&result, "id = ?", resultID).Error; err != nil {
+		return nil, nil, err
+	}
+
+	var run model.RestorationRun
+	if err := r.db.First(&run, "id = ?", result.RunID).Error; err != nil {
+		return nil, nil, err
+	}
+	return &result, &run, nil
+}
+
 func (r *RestorationRepository) CreateResultAndUpdateRun(runID string, result *model.RestorationResult) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(result).Error; err != nil {
@@ -67,5 +83,55 @@ func (r *RestorationRepository) CreateResultAndUpdateRun(runID string, result *m
 				"status":           model.RestorationRunSucceeded,
 			}).
 			Error
+	})
+}
+
+func (r *RestorationRepository) CommitResult(
+	run *model.RestorationRun,
+	result *model.RestorationResult,
+	image *model.MuralImage,
+	changedBy string,
+) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var maxVersion int
+		if err := tx.Model(&model.MuralImage{}).
+			Where("mural_id = ? AND image_type = ?", image.MuralID, image.ImageType).
+			Select("COALESCE(MAX(version), 0)").
+			Scan(&maxVersion).Error; err != nil {
+			return err
+		}
+		image.Version = maxVersion + 1
+
+		if err := tx.Create(image).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Model(&model.RestorationResult{}).
+			Where("id = ?", result.ID).
+			Update("committed_mural_image_id", image.ID).
+			Error; err != nil {
+			return err
+		}
+
+		if err := tx.Model(&model.RestorationRun{}).
+			Where("id = ?", run.ID).
+			Update("committed_result_id", result.ID).
+			Error; err != nil {
+			return err
+		}
+
+		historyValue := fmt.Sprintf("修复工作台结果 %s · 版本 v%s", result.ID, strconv.Itoa(image.Version))
+		if err := tx.Create(&model.MuralHistory{
+			MuralID:   image.MuralID,
+			Field:     "image.restored",
+			NewValue:  &historyValue,
+			ChangedBy: changedBy,
+		}).Error; err != nil {
+			return err
+		}
+
+		result.CommittedMuralImageID = &image.ID
+		run.CommittedResultID = &result.ID
+		return nil
 	})
 }

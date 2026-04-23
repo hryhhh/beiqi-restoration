@@ -149,7 +149,7 @@ PGPASSWORD=beiqi123 psql -h localhost -p 5432 -U beiqi -d beiqi_mural -f scripts
 | `/api/dashboard` | 摘要、预警、图表 |
 | `/api/analysis` | 检测、确认、报告 |
 | `/api/knowledge` | 文档、搜索、问答 |
-| `/api/restoration` | 修复工作台 run / result / variant 流程 |
+| `/api/restoration` | 修复工作台 run / result / variant / commit 流程 |
 | `/api/admin` | 用户、日志、备份、导出 |
 
 知识库问答：

@@ -159,6 +159,7 @@ func main() {
 		restoration.POST("/runs", restorationHandler.CreateRun)
 		restoration.GET("/runs/:id", restorationHandler.GetRun)
 		restoration.POST("/runs/:id/variants", restorationHandler.CreateVariant)
+		restoration.POST("/results/:id/commit", restorationHandler.CommitResult)
 	}
 
 	// 知识库模块
