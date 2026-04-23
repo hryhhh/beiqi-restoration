@@ -47,6 +47,24 @@ describe('restoration mock helpers', () => {
     });
   });
 
+  it('ignores malformed annotation points when resolving selection bounds', () => {
+    expect(resolveSelectionBounds([
+      {
+        type: 'polygon',
+        points: [[0.1], [0.25, 0.35]],
+      },
+      {
+        type: 'polygon',
+        points: [[0.6, 0.7], [0.8, 0.9]],
+      },
+    ], null)).toEqual({
+      minX: 0.25,
+      minY: 0.35,
+      maxX: 0.8,
+      maxY: 0.9,
+    });
+  });
+
   it('falls back for not-implemented and timeout responses', () => {
     expect(shouldFallbackToRestorationMock({ response: { status: 501 } })).toBe(true);
     expect(shouldFallbackToRestorationMock({ code: 'ECONNABORTED' })).toBe(true);
