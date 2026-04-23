@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { App, Button, Card, Empty, Pagination, Spin, Tag } from 'antd';
+import { Alert, App, Button, Card, Empty, Pagination, Spin, Tag } from 'antd';
 import { ArrowRightOutlined } from '@ant-design/icons';
 import { getMurals } from '@/api/mural';
 import type { MuralRecord } from '@/types';
-import { buildShowcaseCardPreview } from './showcaseUtils';
+import { buildShowcaseCardPreview, getShowcaseDisplayMurals, getShowcaseFallbackMurals } from './showcaseUtils';
 import './showcase.css';
 
 const DEFAULT_PAGE_SIZE = 12;
@@ -17,9 +17,17 @@ export default function ShowcaseListPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [loading, setLoading] = useState(true);
+  const [usingFallback, setUsingFallback] = useState(false);
 
   useEffect(() => {
     let active = true;
+
+    function applyFallback() {
+      const fallbackMurals = getShowcaseFallbackMurals();
+      setMurals(fallbackMurals);
+      setTotal(fallbackMurals.length);
+      setUsingFallback(fallbackMurals.length > 0);
+    }
 
     async function loadShowcase() {
       setLoading(true);
@@ -29,13 +37,14 @@ export default function ShowcaseListPage() {
           return;
         }
 
-        setMurals(result.data.filter((mural) => mural.status === 'completed'));
-        setTotal(result.total);
+        const displayMurals = getShowcaseDisplayMurals(result.data);
+        setMurals(displayMurals.murals);
+        setTotal(displayMurals.usingFallback ? displayMurals.murals.length : result.total);
+        setUsingFallback(displayMurals.usingFallback);
       } catch {
         if (active) {
-          setMurals([]);
-          setTotal(0);
-          message.error('加载修复成果失败');
+          applyFallback();
+          message.warning('真实修复成果暂不可用，已展示示例数据');
         }
       } finally {
         if (active) {
@@ -70,6 +79,16 @@ export default function ShowcaseListPage() {
           </div>
         </div>
       </section>
+
+      {usingFallback && (
+        <Alert
+          className="showcase-fallback-alert"
+          type="info"
+          showIcon
+          message="当前展示示例数据"
+          description="连接后端并导入或维护已完成修复的壁画后，这里会自动切换为真实修复成果。"
+        />
+      )}
 
       <Spin spinning={loading}>
         {previews.length ? (

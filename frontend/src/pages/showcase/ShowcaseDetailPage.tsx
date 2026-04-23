@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Empty, Image, Result, Spin, Tag } from 'antd';
+import { Alert, Button, Empty, Image, Result, Spin, Tag } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { getMural } from '@/api/mural';
 import type { MuralRecord } from '@/types';
 import {
+  getShowcaseFallbackMural,
+  getShowcaseFallbackMurals,
+  getShowcaseImageSrc,
   getPrimaryRestoredImage,
-  getSecondaryRestoredImage,
+  getPrimaryVisibleImage,
   getShowcaseDetailState,
   getShowcaseText,
+  isCompleteShowcaseMural,
 } from './showcaseUtils';
 import './showcase.css';
 
@@ -24,6 +28,7 @@ export default function ShowcaseDetailPage() {
   const navigate = useNavigate();
   const [mural, setMural] = useState<MuralRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [usingFallback, setUsingFallback] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -41,11 +46,20 @@ export default function ShowcaseDetailPage() {
       try {
         const result = await getMural(id);
         if (active) {
-          setMural(result);
+          if (result.status === 'completed' && !isCompleteShowcaseMural(result)) {
+            const fallbackMural = getShowcaseFallbackMural(id) ?? getShowcaseFallbackMurals()[0] ?? null;
+            setMural(fallbackMural);
+            setUsingFallback(Boolean(fallbackMural));
+          } else {
+            setMural(result);
+            setUsingFallback(false);
+          }
         }
       } catch {
         if (active) {
-          setMural(null);
+          const fallbackMural = getShowcaseFallbackMural(id);
+          setMural(fallbackMural);
+          setUsingFallback(Boolean(fallbackMural));
         }
       } finally {
         if (active) {
@@ -105,9 +119,11 @@ export default function ShowcaseDetailPage() {
   }
 
   const primaryImage = getPrimaryRestoredImage(readyMural);
-  const secondaryImage = getSecondaryRestoredImage(readyMural);
-  const primarySrc = primaryImage ? `/uploads/${primaryImage.filePath}` : null;
-  const secondarySrc = secondaryImage ? `/uploads/${secondaryImage.filePath}` : null;
+  const beforeImage = getPrimaryVisibleImage(readyMural);
+  const afterImage = primaryImage;
+  const primarySrc = getShowcaseImageSrc(primaryImage?.filePath);
+  const beforeSrc = getShowcaseImageSrc(beforeImage?.filePath);
+  const afterSrc = getShowcaseImageSrc(afterImage?.filePath);
 
   return (
     <div className="showcase-page showcase-detail">
@@ -117,6 +133,16 @@ export default function ShowcaseDetailPage() {
         </Button>
         <Tag color="success" bordered={false}>已完成修复</Tag>
       </div>
+
+      {usingFallback && (
+        <Alert
+          className="showcase-fallback-alert"
+          type="info"
+          showIcon
+          message="当前展示示例数据"
+          description="真实接口可用且存在该壁画记录后，详情页会展示后端维护的修复成果内容。"
+        />
+      )}
 
       <section className="showcase-detail__layout">
         <div className="showcase-panel showcase-panel--media">
@@ -141,36 +167,7 @@ export default function ShowcaseDetailPage() {
             <span>{readyMural.material}</span>
           </div>
           <p className="showcase-detail__lead">{getShowcaseText(readyMural.popularIntroduction)}</p>
-        </div>
-      </section>
-
-      <section className="showcase-narratives">
-        {narrativeSections.map((section) => (
-          <article key={section.key} className="showcase-panel showcase-panel--narrative">
-            <div className="showcase-panel__eyebrow">{section.label}</div>
-            <p className="showcase-panel__body">
-              {getShowcaseText(readyMural[section.key])}
-            </p>
-          </article>
-        ))}
-      </section>
-
-      <section className="showcase-gallery">
-        <article className="showcase-panel showcase-panel--media">
-          <div className="showcase-panel__eyebrow">Secondary View</div>
-          {secondarySrc ? (
-            <Image
-              className="showcase-detail__image"
-              src={secondarySrc}
-              alt={`${readyMural.name} 次修复成果图`}
-            />
-          ) : (
-            <div className="showcase-card__placeholder showcase-card__placeholder--large">暂无补充成果图</div>
-          )}
-        </article>
-        <article className="showcase-panel">
-          <div className="showcase-panel__eyebrow">展陈摘要</div>
-          <dl className="showcase-summary-list">
+          <dl className="showcase-summary-list showcase-summary-list--inline">
             <div>
               <dt>墓葬位置</dt>
               <dd>{readyMural.tombLocation || '暂无内容'}</dd>
@@ -184,7 +181,65 @@ export default function ShowcaseDetailPage() {
               <dd>{getShowcaseText(readyMural.description)}</dd>
             </div>
           </dl>
+        </div>
+      </section>
+
+      <section className="showcase-comparison">
+        <article className="showcase-panel showcase-panel--media showcase-comparison__panel">
+          <div className="showcase-panel__eyebrow">Before Restoration</div>
+          <h2 className="showcase-comparison__title">修复前</h2>
+          {beforeSrc ? (
+            <Image
+              className="showcase-detail__image"
+              src={beforeSrc}
+              alt={`${readyMural.name} 修复前对比图`}
+            />
+          ) : (
+            <div className="showcase-card__placeholder showcase-card__placeholder--large">暂无修复前图</div>
+          )}
         </article>
+
+        <article className="showcase-panel showcase-panel--media showcase-comparison__panel">
+          <div className="showcase-panel__eyebrow">After Restoration</div>
+          <h2 className="showcase-comparison__title">修复后</h2>
+          {afterSrc ? (
+            <Image
+              className="showcase-detail__image"
+              src={afterSrc}
+              alt={`${readyMural.name} 修复后对比图`}
+            />
+          ) : (
+            <div className="showcase-card__placeholder showcase-card__placeholder--large">暂无修复后图</div>
+          )}
+        </article>
+      </section>
+
+      <section className="showcase-panel showcase-narratives">
+        <div className="showcase-panel__eyebrow">Narrative Chapters</div>
+        <div className="showcase-narratives__list">
+          {narrativeSections.map((section, index) => {
+            const chapterNumber = String(index + 1).padStart(2, '0');
+            const chapterAlignment = index % 2 === 0 ? 'start' : 'end';
+
+            return (
+              <article
+                key={section.key}
+                className={`showcase-narratives__chapter showcase-narratives__chapter--${chapterAlignment}`}
+              >
+                <div className="showcase-narratives__rail" aria-hidden="true">
+                  <span className="showcase-narratives__node">{chapterNumber}</span>
+                </div>
+                <div className="showcase-narratives__card">
+                  <div className="showcase-narratives__chapter-label">Chapter {chapterNumber}</div>
+                  <h2 className="showcase-narratives__chapter-title">{section.label}</h2>
+                  <p className="showcase-panel__body">
+                    {getShowcaseText(readyMural[section.key])}
+                  </p>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </section>
     </div>
   );

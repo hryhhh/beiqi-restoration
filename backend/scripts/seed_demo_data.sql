@@ -67,6 +67,30 @@ INSERT INTO murals (
   )
 ON CONFLICT (id) DO NOTHING;
 
+UPDATE murals
+SET
+  popular_introduction = CASE
+    WHEN popular_introduction IS NULL OR btrim(popular_introduction) = ''
+    THEN '这幅宴饮图经过清理、加固和局部补全修复，人物轮廓、器物细节与设色层次重新清晰呈现。'
+    ELSE popular_introduction
+  END,
+  historical_background = CASE
+    WHEN historical_background IS NULL OR btrim(historical_background) = ''
+    THEN '徐显秀墓壁画反映北齐贵族生活、礼仪空间与多民族文化交流，是理解北朝墓葬图像的重要材料。'
+    ELSE historical_background
+  END,
+  artistic_features = CASE
+    WHEN artistic_features IS NULL OR btrim(artistic_features) = ''
+    THEN '画面以宴饮场景为核心，人物姿态、服饰纹样和器用组合细腻，体现北齐壁画线描与重彩并用的艺术特征。'
+    ELSE artistic_features
+  END,
+  cultural_significance = CASE
+    WHEN cultural_significance IS NULL OR btrim(cultural_significance) = ''
+    THEN '修复成果让壁画从病害遮蔽中重新进入公众视野，为展陈、研究和数字化传播提供稳定基础。'
+    ELSE cultural_significance
+  END
+WHERE id = '10000000-0000-0000-0000-000000000004';
+
 -- 病害标注（用于方案模块关联）
 INSERT INTO damage_annotations (
   id, mural_id, image_layer, damage_type, severity, coordinates,

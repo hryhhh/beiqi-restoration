@@ -78,24 +78,34 @@
 
 .showcase-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 360px));
   gap: 20px;
+  justify-content: center;
+  align-items: start;
+}
+
+.showcase-fallback-alert {
+  margin-bottom: 18px;
 }
 
 .showcase-card {
   overflow: hidden;
   border-radius: 24px;
   cursor: pointer;
+  height: 100%;
 }
 
 .showcase-card .ant-card-body {
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 14px;
+  height: 100%;
   padding: 0 20px 20px;
 }
 
 .showcase-card__media {
-  height: 240px;
+  aspect-ratio: 4 / 3;
+  min-height: 220px;
   margin: -1px -1px 0;
   overflow: hidden;
   background:
@@ -163,10 +173,25 @@
 }
 
 .showcase-detail__layout,
-.showcase-gallery {
+.showcase-comparison {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
   gap: 20px;
+}
+
+.showcase-comparison {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.showcase-comparison__panel {
+  display: grid;
+  gap: 12px;
+}
+
+.showcase-comparison__title {
+  margin: 0;
+  color: #4a2c1e;
+  font-size: 20px;
 }
 
 .showcase-panel {
@@ -206,6 +231,8 @@
 }
 
 .showcase-detail__summary {
+  display: grid;
+  gap: 20px;
   align-content: start;
 }
 
@@ -225,19 +252,148 @@
 }
 
 .showcase-narratives {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  position: relative;
+  overflow: hidden;
+  padding: clamp(24px, 3vw, 34px);
+  background:
+    linear-gradient(180deg, rgba(255, 248, 239, 0.98), rgba(245, 235, 222, 0.98)),
+    radial-gradient(circle at top left, rgba(165, 111, 73, 0.14), transparent 34%);
 }
 
-.showcase-panel--narrative {
-  min-height: 210px;
+.showcase-narratives::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 24px;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(148, 108, 79, 0.06),
+      rgba(148, 108, 79, 0.06) 1px,
+      transparent 1px,
+      transparent 42px
+    );
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.showcase-narratives__list {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  margin-top: 10px;
+}
+
+.showcase-narratives__list::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 22px;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(145, 89, 55, 0), rgba(145, 89, 55, 0.42), rgba(145, 89, 55, 0));
+}
+
+.showcase-narratives__chapter {
+  --chapter-offset: 0px;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.showcase-narratives__chapter--end {
+  --chapter-offset: clamp(20px, 5vw, 56px);
+}
+
+.showcase-narratives__rail {
+  display: flex;
+  justify-content: center;
+  padding-top: 16px;
+}
+
+.showcase-narratives__node {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #a66b48, #7d4b31);
+  color: #fff7ef;
+  box-shadow: 0 0 0 6px rgba(166, 107, 72, 0.12);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.showcase-narratives__card {
+  position: relative;
+  transform: translateX(var(--chapter-offset));
+  padding: 22px 24px;
+  border: 1px solid rgba(128, 89, 62, 0.14);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 247, 0.84), rgba(251, 245, 237, 0.9)),
+    radial-gradient(circle at top right, rgba(187, 138, 101, 0.12), transparent 36%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.68),
+    0 16px 30px rgba(94, 61, 40, 0.09);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.showcase-narratives__card::before {
+  content: "";
+  position: absolute;
+  top: 28px;
+  left: calc(-18px - var(--chapter-offset));
+  width: calc(18px + var(--chapter-offset));
+  height: 1px;
+  background: linear-gradient(90deg, rgba(145, 89, 55, 0.26), rgba(145, 89, 55, 0.1));
+}
+
+.showcase-narratives__chapter:hover .showcase-narratives__card {
+  transform: translateX(calc(var(--chapter-offset) + 6px));
+  border-color: rgba(128, 89, 62, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 18px 34px rgba(94, 61, 40, 0.12);
+}
+
+.showcase-narratives__chapter-label {
+  margin-bottom: 10px;
+  color: #8d6851;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.showcase-narratives__chapter-title {
+  margin: 0 0 12px;
+  color: #4f2f20;
+  font-size: clamp(20px, 2.4vw, 26px);
+  line-height: 1.2;
+}
+
+.showcase-narratives .showcase-panel__body {
+  position: relative;
+  z-index: 1;
+  max-width: 64ch;
 }
 
 .showcase-summary-list {
   display: grid;
   gap: 18px;
   margin: 0;
+}
+
+.showcase-summary-list--inline {
+  padding-top: 18px;
+  border-top: 1px solid rgba(143, 98, 69, 0.16);
 }
 
 .showcase-summary-list dt {
@@ -248,9 +404,12 @@
 
 @media (max-width: 1024px) {
   .showcase-detail__layout,
-  .showcase-gallery,
-  .showcase-narratives {
+  .showcase-comparison {
     grid-template-columns: 1fr;
+  }
+
+  .showcase-narratives__chapter--end {
+    --chapter-offset: 28px;
   }
 }
 
@@ -272,5 +431,48 @@
     min-width: 0;
     width: 100%;
     text-align: left;
+  }
+
+  .showcase-card__media {
+    min-height: 200px;
+  }
+
+  .showcase-narratives {
+    padding: 22px 18px;
+  }
+
+  .showcase-narratives::before {
+    inset: 10px;
+  }
+
+  .showcase-narratives__list::before {
+    left: 17px;
+  }
+
+  .showcase-narratives__chapter {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .showcase-narratives__chapter--end {
+    --chapter-offset: 0px;
+  }
+
+  .showcase-narratives__card {
+    transform: none;
+    padding: 18px 18px 18px 20px;
+  }
+
+  .showcase-narratives__card::before {
+    left: -12px;
+    width: 12px;
+  }
+
+  .showcase-narratives__chapter:hover .showcase-narratives__card {
+    transform: none;
+  }
+
+  .showcase-narratives__chapter-title {
+    font-size: 20px;
   }
 }

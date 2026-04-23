@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { MuralImage, MuralRecord } from '@/types';
 import {
   buildShowcaseCardPreview,
+  getShowcaseDisplayMurals,
+  getShowcaseFallbackMural,
+  getShowcaseFallbackMurals,
+  getShowcaseImageSrc,
   getPrimaryRestoredImage,
+  getPrimaryVisibleImage,
   getRestoredImages,
   getSecondaryRestoredImage,
   getShowcaseDetailState,
@@ -83,5 +88,70 @@ describe('showcase utils', () => {
       summary: '墓主人车马出行与礼仪场景。',
       imageSrc: '/uploads/murals/mural-1/restored-1.png',
     });
+  });
+
+  it('provides completed mock murals as fallback showcase data', () => {
+    const fallbackMurals = getShowcaseFallbackMurals();
+    const preview = buildShowcaseCardPreview(fallbackMurals[0]);
+    const beforeImage = getPrimaryVisibleImage(fallbackMurals[0]);
+    const afterImage = getPrimaryRestoredImage(fallbackMurals[0]);
+
+    expect(fallbackMurals.length).toBeGreaterThan(0);
+    expect(fallbackMurals.every((mural) => mural.status === 'completed')).toBe(true);
+    expect(fallbackMurals[0].popularIntroduction).toContain('修复');
+    expect(beforeImage?.fileHash).toBe('mock-before-image');
+    expect(afterImage?.fileHash).toBe('mock-after-image');
+    expect(preview.imageSrc).toBeTruthy();
+    expect(preview.imageSrc).not.toMatch(/^\/uploads\//);
+  });
+
+  it('maps the demo comparison assets into the intended before and after slots', () => {
+    const fallbackMural = getShowcaseFallbackMural('mock-m4');
+    const beforeImage = fallbackMural ? getPrimaryVisibleImage(fallbackMural) : null;
+    const afterImage = fallbackMural ? getPrimaryRestoredImage(fallbackMural) : null;
+
+    expect(beforeImage?.filePath).toContain('after.jpg');
+    expect(afterImage?.filePath).toContain('before.jpg');
+  });
+
+  it('keeps frontend asset image paths without prefixing uploads', () => {
+    expect(getShowcaseImageSrc('/src/assets/images/after.jpg')).toBe('/src/assets/images/after.jpg');
+    expect(getShowcaseImageSrc('murals/mural-1/restored.jpg')).toBe('/uploads/murals/mural-1/restored.jpg');
+  });
+
+  it('finds only completed fallback murals for detail routes', () => {
+    expect(getShowcaseFallbackMural('mock-m4')?.status).toBe('completed');
+    expect(getShowcaseFallbackMural('mock-m1')).toBeNull();
+  });
+
+  it('uses fallback showcase data when api murals are incomplete for demo display', () => {
+    const result = getShowcaseDisplayMurals([
+      createMural([], {
+        popularIntroduction: '有文字但没有修复后图片',
+        historicalBackground: '历史背景',
+        artisticFeatures: '艺术特点',
+        culturalSignificance: '文化意义',
+      }),
+    ]);
+
+    expect(result.usingFallback).toBe(true);
+    expect(result.murals[0].id).toBe('mock-m4');
+  });
+
+  it('keeps complete api murals instead of fallback showcase data', () => {
+    const mural = createMural(
+      [createImage('restored-1', 'restored', 'murals/mural-1/restored-1.png')],
+      {
+        popularIntroduction: '通俗化介绍',
+        historicalBackground: '历史背景',
+        artisticFeatures: '艺术特点',
+        culturalSignificance: '文化意义',
+      },
+    );
+
+    const result = getShowcaseDisplayMurals([mural]);
+
+    expect(result.usingFallback).toBe(false);
+    expect(result.murals).toEqual([mural]);
   });
 });

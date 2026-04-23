@@ -5,6 +5,13 @@
 
 import type { MuralRecord, Project, RestorationPlan, KnowledgeDoc, User, AuditLog } from '@/types';
 import type { DashboardSummary, ChartData } from '@/api/dashboard';
+import showcaseAfterAssetImage from '@/assets/images/after.jpg';
+import showcaseBeforeAssetImage from '@/assets/images/before.jpg';
+
+// The demo asset filenames do not match the intended before/after showcase semantics.
+// Keep this mapping aligned with the actual page labels instead of the raw filenames.
+const showcaseBeforeImage = showcaseAfterAssetImage;
+const showcaseAfterImage = showcaseBeforeAssetImage;
 
 /* ====== 仪表盘 ====== */
 
@@ -79,7 +86,40 @@ export const MOCK_MURALS: MuralRecord[] = [
   {
     id: 'mock-m4', name: '太原徐显秀墓宴饮图', era: '北齐', site: '太原王家峰',
     material: '石灰地仗', status: 'completed', healthIndex: 88, isFeatured: true,
-    images: [], createdAt: '2024-09-20', updatedAt: '2025-08-15',
+    tombLocation: '后室南壁',
+    dimensions: '300cm x 180cm',
+    description: '一期修复已完成，色层稳定性和画面可读性得到改善。',
+    popularIntroduction: '这幅宴饮图经过清理、加固和局部补全修复，人物轮廓、器物细节与设色层次重新清晰呈现。',
+    historicalBackground: '徐显秀墓壁画反映北齐贵族生活、礼仪空间与多民族文化交流，是理解北朝墓葬图像的重要材料。',
+    artisticFeatures: '画面以宴饮场景为核心，人物姿态、服饰纹样和器用组合细腻，体现北齐壁画线描与重彩并用的艺术特征。',
+    culturalSignificance: '修复成果让壁画从病害遮蔽中重新进入公众视野，为展陈、研究和数字化传播提供稳定基础。',
+    images: [
+      {
+        id: 'mock-m4-visible-1',
+        muralId: 'mock-m4',
+        filePath: showcaseBeforeImage,
+        fileHash: 'mock-before-image',
+        imageType: 'visible',
+        version: 1,
+        width: 1400,
+        height: 934,
+        fileSize: 576512,
+        createdAt: '2025-08-15',
+      },
+      {
+        id: 'mock-m4-restored-1',
+        muralId: 'mock-m4',
+        filePath: showcaseAfterImage,
+        fileHash: 'mock-after-image',
+        imageType: 'restored',
+        version: 1,
+        width: 1400,
+        height: 934,
+        fileSize: 571392,
+        createdAt: '2025-08-15',
+      },
+    ],
+    createdAt: '2024-09-20', updatedAt: '2025-08-15',
   },
   {
     id: 'mock-m5', name: '朔州水泉梁壁画墓狩猎图', era: '北齐', site: '朔州水泉梁',
