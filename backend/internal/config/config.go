@@ -8,18 +8,28 @@ import (
 
 // Config 应用配置
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	JWT      JWTConfig
-	Upload   UploadConfig
-	Log      LogConfig
-	LLM      LLMConfig
+	Server      ServerConfig
+	Database    DatabaseConfig
+	JWT         JWTConfig
+	Upload      UploadConfig
+	Log         LogConfig
+	LLM         LLMConfig
+	Restoration RestorationConfig
 }
 
 type LLMConfig struct {
 	BaseURL string // OpenAI 兼容 API 地址
 	APIKey  string
 	Model   string
+}
+
+type RestorationConfig struct {
+	Provider          string
+	BaseURL           string
+	APIKey            string
+	Model             string
+	TimeoutSeconds    int
+	AllowMockFallback bool
 }
 
 type ServerConfig struct {
@@ -90,6 +100,14 @@ func Load() *Config {
 			BaseURL: getEnv("LLM_BASE_URL", ""),
 			APIKey:  getEnv("LLM_API_KEY", ""),
 			Model:   getEnv("LLM_MODEL", "gpt-4o-mini"),
+		},
+		Restoration: RestorationConfig{
+			Provider:          getEnv("RESTORATION_PROVIDER", "mock"),
+			BaseURL:           getEnv("RESTORATION_BASE_URL", ""),
+			APIKey:            getEnv("RESTORATION_API_KEY", ""),
+			Model:             getEnv("RESTORATION_MODEL", "default"),
+			TimeoutSeconds:    getEnvInt("RESTORATION_TIMEOUT_SECONDS", 60),
+			AllowMockFallback: getEnv("RESTORATION_ALLOW_MOCK_FALLBACK", "true") == "true",
 		},
 	}
 }

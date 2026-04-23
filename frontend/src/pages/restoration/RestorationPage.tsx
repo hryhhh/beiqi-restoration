@@ -17,13 +17,18 @@ import {
 } from 'antd';
 import { CloudUploadOutlined } from '@ant-design/icons';
 import { getAnnotations } from '@/api/annotation';
-import { getMurals, uploadMuralImage } from '@/api/mural';
-import { generateRestoration } from '@/api/restoration';
+import { getMurals } from '@/api/mural';
+import {
+  commitRestorationResult,
+  createRestorationRun,
+  createRestorationVariant,
+  getRestorationRun,
+  listRestorationRuns,
+} from '@/api/restoration';
 import RestorationSelectionCanvas from '@/components/restoration/RestorationSelectionCanvas';
 import ComparisonView from '@/components/comparison/ComparisonView';
 import { DAMAGE_TYPE_MAP, MURAL_STATUS_MAP } from '@/constants';
 import {
-  buildSaveFileName,
   createInitialRestorationParameters,
   getStartDisabledReason,
   resetSessionForMuralChange,
@@ -35,9 +40,10 @@ import type {
   MuralRecord,
   RestorationMode,
   RestorationParameters,
+  RestorationRun,
+  RestorationRunDetail,
   RestorationResult,
 } from '@/types';
-import { imageUrlToFile } from '@/utils/imageUtils';
 import './restoration.css';
 
 const { Title, Paragraph, Text } = Typography;
@@ -86,6 +92,20 @@ const advancedParameterGroups: Array<{
   },
 ];
 
+const restorationHistoryLimit = 8;
+const restorationSelectedMuralKey = 'restoration:selected-mural-id';
+const restorationSelectedRunKey = 'restoration:selected-run-id';
+
+function getModeLabel(mode: RestorationMode) {
+  return mode === 'partial' ? '局部精修' : '整图修复';
+}
+
+function mergeRunHistory(runs: RestorationRun[], nextRun: RestorationRun) {
+  return [nextRun, ...runs.filter((item) => item.id !== nextRun.id)]
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    .slice(0, restorationHistoryLimit);
+}
+
 export default function RestorationPage() {
   const { message } = App.useApp();
   const navigate = useNavigate();
@@ -93,12 +113,17 @@ export default function RestorationPage() {
   const [selectedMuralId, setSelectedMuralId] = useState('');
   const [mode, setMode] = useState<RestorationMode>('full');
   const [parameters, setParameters] = useState(createInitialRestorationParameters());
+  const [sourceImageFile, setSourceImageFile] = useState<File | null>(null);
   const [sourceImageUrl, setSourceImageUrl] = useState('');
   const [annotations, setAnnotations] = useState<DamageAnnotation[]>([]);
   const [selectedAnnotationIds, setSelectedAnnotationIds] = useState<string[]>([]);
   const [manualSelection, setManualSelection] = useState<AnnotationCoordinates | null>(null);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [currentResult, setCurrentResult] = useState<RestorationResult | null>(null);
   const [variants, setVariants] = useState<RestorationResult[]>([]);
+  const [runHistory, setRunHistory] = useState<RestorationRun[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [restoringRunId, setRestoringRunId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -109,6 +134,33 @@ export default function RestorationPage() {
         message.error('加载壁画列表失败');
       });
   }, [message]);
+
+  useEffect(() => {
+    if (selectedMuralId || murals.length === 0) {
+      return;
+    }
+
+    const storedMuralId = localStorage.getItem(restorationSelectedMuralKey);
+    if (storedMuralId && murals.some((item) => item.id === storedMuralId)) {
+      setSelectedMuralId(storedMuralId);
+    }
+  }, [murals, selectedMuralId]);
+
+  useEffect(() => {
+    if (selectedMuralId) {
+      localStorage.setItem(restorationSelectedMuralKey, selectedMuralId);
+      return;
+    }
+    localStorage.removeItem(restorationSelectedMuralKey);
+  }, [selectedMuralId]);
+
+  useEffect(() => {
+    if (activeRunId) {
+      localStorage.setItem(restorationSelectedRunKey, activeRunId);
+      return;
+    }
+    localStorage.removeItem(restorationSelectedRunKey);
+  }, [activeRunId]);
 
   useEffect(() => {
     if (!selectedMuralId) {
@@ -123,6 +175,72 @@ export default function RestorationPage() {
       });
   }, [selectedMuralId]);
 
+  useEffect(() => {
+    if (!selectedMuralId) {
+      setRunHistory([]);
+      setRestoringRunId(null);
+      return;
+    }
+
+    let cancelled = false;
+    const storedRunId = localStorage.getItem(restorationSelectedRunKey);
+
+    setHistoryLoading(true);
+    listRestorationRuns(selectedMuralId, restorationHistoryLimit)
+      .then(async (runs) => {
+        if (cancelled) {
+          return;
+        }
+
+        setRunHistory(runs);
+        const preferredRun = runs.find((item) => item.id === storedRunId) || runs[0];
+        if (!preferredRun) {
+          return;
+        }
+
+        setRestoringRunId(preferredRun.id);
+        try {
+          const detail = await getRestorationRun(preferredRun.id);
+          if (cancelled) {
+            return;
+          }
+
+          setSourceImageFile(null);
+          setSourceImageUrl(detail.sourceImageUrl);
+          setMode(detail.run.mode);
+          setParameters(detail.run.parametersSnapshot);
+          setSelectedAnnotationIds(detail.run.annotationIds);
+          setManualSelection(detail.run.manualSelection);
+          setActiveRunId(detail.run.id);
+          setCurrentResult(detail.currentResult);
+          setVariants(detail.variants);
+        } catch {
+          if (!cancelled) {
+            message.error('加载历史修复记录失败');
+          }
+        } finally {
+          if (!cancelled) {
+            setRestoringRunId(null);
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setRunHistory([]);
+          message.error('加载修复历史失败');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setHistoryLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [message, selectedMuralId]);
+
   useEffect(() => () => {
     if (sourceImageUrl.startsWith('blob:')) {
       URL.revokeObjectURL(sourceImageUrl);
@@ -136,11 +254,30 @@ export default function RestorationPage() {
 
   const startDisabledReason = useMemo(() => getStartDisabledReason({
     muralId: selectedMuralId,
-    sourceImageUrl,
+    sourceImageUrl: sourceImageFile ? sourceImageUrl : '',
     mode,
     selectedAnnotationIds,
     manualSelection,
-  }), [selectedMuralId, sourceImageUrl, mode, selectedAnnotationIds, manualSelection]);
+  }), [selectedMuralId, sourceImageFile, sourceImageUrl, mode, selectedAnnotationIds, manualSelection]);
+
+  const workspaceHint = useMemo(() => {
+    if (!sourceImageFile && currentResult) {
+      return '当前工作台已恢复到历史修复记录；如需新建修复任务，请重新上传待修复原图。';
+    }
+    return startDisabledReason;
+  }, [currentResult, sourceImageFile, startDisabledReason]);
+
+  const applyRunDetail = (detail: RestorationRunDetail) => {
+    setSourceImageFile(null);
+    setSourceImageUrl(detail.sourceImageUrl);
+    setMode(detail.run.mode);
+    setParameters(detail.run.parametersSnapshot);
+    setSelectedAnnotationIds(detail.run.annotationIds);
+    setManualSelection(detail.run.manualSelection);
+    setActiveRunId(detail.run.id);
+    setCurrentResult(detail.currentResult);
+    setVariants(detail.variants);
+  };
 
   const handleMuralChange = (value: string) => {
     if (sourceImageUrl.startsWith('blob:')) {
@@ -156,11 +293,15 @@ export default function RestorationPage() {
     });
 
     setSelectedMuralId(value);
+    setSourceImageFile(null);
     setSourceImageUrl(reset.sourceImageUrl);
     setSelectedAnnotationIds(reset.selectedAnnotationIds);
     setManualSelection(reset.manualSelection);
+    setActiveRunId(null);
     setCurrentResult(null);
     setVariants([]);
+    setRunHistory([]);
+    setRestoringRunId(null);
   };
 
   const handleSourceUpload = (file: File) => {
@@ -173,8 +314,10 @@ export default function RestorationPage() {
       URL.revokeObjectURL(sourceImageUrl);
     }
 
+    setSourceImageFile(file);
     setSourceImageUrl(URL.createObjectURL(file));
     setManualSelection(null);
+    setActiveRunId(null);
     setCurrentResult(null);
     setVariants([]);
     return false;
@@ -192,40 +335,41 @@ export default function RestorationPage() {
     label: `${DAMAGE_TYPE_MAP[annotation.damageType]?.label || annotation.damageType} · 严重度 ${annotation.severity}`,
   }));
 
-  const selectedAnnotationShapes = useMemo(
-    () => annotations
-      .filter((item) => selectedAnnotationIds.includes(item.id))
-      .map((item) => item.coordinates),
-    [annotations, selectedAnnotationIds],
-  );
-
   const handleGenerate = async (variantBase: RestorationResult | null = null) => {
-    if (startDisabledReason || !sourceImageUrl || !selectedMuralId) {
+    if (!variantBase && (startDisabledReason || !selectedMuralId)) {
       if (startDisabledReason) {
         message.warning(startDisabledReason);
       }
       return;
     }
+    if (!variantBase && !sourceImageFile) {
+      message.warning('请先上传待修复原图');
+      return;
+    }
+    if (variantBase && !activeRunId) {
+      message.warning('请先生成主结果');
+      return;
+    }
 
     setGenerating(true);
     try {
-      const result = await generateRestoration({
-        muralId: selectedMuralId,
-        mode,
-        sourceImageUrl,
-        parameters,
-        annotationShapes: selectedAnnotationShapes,
-        annotationIds: selectedAnnotationIds,
-        manualSelection,
-        variantBase,
-      });
-
-      if (variantBase) {
-        setVariants((previous) => [...previous, result]);
-        setCurrentResult(result);
+      if (variantBase && activeRunId) {
+        const detail = await createRestorationVariant(activeRunId, variantBase.id);
+        applyRunDetail(detail);
+        setRunHistory((previous) => mergeRunHistory(previous, detail.run));
+        message.success(detail.currentResult?.isMock ? '已生成新的修复变体（服务端 mock）' : '已生成新的修复变体');
       } else {
-        setCurrentResult(result);
-        setVariants([]);
+        const detail = await createRestorationRun({
+          muralId: selectedMuralId,
+          mode,
+          sourceFile: sourceImageFile!,
+          parameters,
+          annotationIds: selectedAnnotationIds,
+          manualSelection,
+        });
+        applyRunDetail(detail);
+        setRunHistory((previous) => mergeRunHistory(previous, detail.run));
+        message.success(detail.currentResult?.isMock ? '已生成修复结果（服务端 mock）' : '已生成修复结果');
       }
     } catch {
       message.error('修复结果生成失败');
@@ -241,12 +385,13 @@ export default function RestorationPage() {
 
     setSaving(true);
     try {
-      const file = await imageUrlToFile(
-        currentResult.imageUrl,
-        buildSaveFileName(selectedMuralId, new Date()),
-      );
-      await uploadMuralImage(selectedMuralId, file, 'restored');
-      message.success(currentResult.isMock ? '演示结果已保存为修复后图层' : '修复结果已保存为修复后图层');
+      const committed = await commitRestorationResult(currentResult.id);
+      setCurrentResult(committed.result);
+      setVariants((previous) => previous.map((item) => (
+        item.id === committed.result.id ? committed.result : item
+      )));
+      setRunHistory((previous) => mergeRunHistory(previous, committed.run));
+      message.success(committed.result.isMock ? '服务端 mock 结果已保存为修复后图层' : '修复结果已保存为修复后图层');
       navigate(`/murals/${selectedMuralId}`);
     } catch {
       message.error('保存修复结果失败');
@@ -255,72 +400,155 @@ export default function RestorationPage() {
     }
   };
 
+  const handleRestoreRun = async (runId: string) => {
+    if (restoringRunId || (runId === activeRunId && currentResult)) {
+      return;
+    }
+
+    setRestoringRunId(runId);
+    try {
+      const detail = await getRestorationRun(runId);
+      applyRunDetail(detail);
+      setRunHistory((previous) => mergeRunHistory(previous, detail.run));
+      message.success('已恢复该次修复记录');
+    } catch {
+      message.error('加载修复记录失败');
+    } finally {
+      setRestoringRunId(null);
+    }
+  };
+
   return (
     <div className="restoration-page">
       <div>
         <Title level={2} style={{ marginBottom: 8 }}>壁画修复工作台</Title>
         <Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          选择壁画、上传待修复原图、调整参数并生成修复结果。当前优先保证完整闭环，真实接口不可用时会降级到演示模式。
+          选择壁画、上传待修复原图、调整参数并生成修复结果。当前流程已接到后端 run / result / commit API，真实 provider 不可用时会由服务端 mock 托底。
         </Paragraph>
       </div>
 
-      {startDisabledReason && (
+      {workspaceHint && (
         <Alert
           type="info"
           showIcon
-          message={startDisabledReason}
+          message={workspaceHint}
         />
       )}
 
       <Card className="restoration-card" title="顶部上下文区">
-        <div className="restoration-context">
-          <Space direction="vertical" size={12} style={{ width: '100%' }}>
-            <Select
-              showSearch
-              placeholder="请选择目标壁画"
-              value={selectedMuralId || undefined}
-              options={murals.map((mural) => ({
-                value: mural.id,
-                label: `${mural.name}（${mural.site}）`,
-              }))}
-              onChange={handleMuralChange}
-              filterOption={(input, option) =>
-                (option?.label as string | undefined)?.toLowerCase().includes(input.toLowerCase()) ?? false
-              }
-            />
-            <Radio.Group
-              value={mode}
-              onChange={(event) => setMode(event.target.value)}
-              optionType="button"
-              buttonStyle="solid"
-              options={[
-                { label: '整图修复', value: 'full' },
-                { label: '局部精修', value: 'partial' },
-              ]}
-            />
-          </Space>
+        <div className="restoration-context-stack">
+          <div className="restoration-context">
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              <Select
+                showSearch
+                placeholder="请选择目标壁画"
+                value={selectedMuralId || undefined}
+                options={murals.map((mural) => ({
+                  value: mural.id,
+                  label: `${mural.name}（${mural.site}）`,
+                }))}
+                onChange={handleMuralChange}
+                filterOption={(input, option) =>
+                  (option?.label as string | undefined)?.toLowerCase().includes(input.toLowerCase()) ?? false
+                }
+              />
+              <Radio.Group
+                value={mode}
+                onChange={(event) => setMode(event.target.value)}
+                optionType="button"
+                buttonStyle="solid"
+                options={[
+                  { label: '整图修复', value: 'full' },
+                  { label: '局部精修', value: 'partial' },
+                ]}
+              />
+            </Space>
 
-          {selectedMural ? (
-            <div className="restoration-summary">
-              <div className="restoration-summary-item">
-                <div className="restoration-summary-label">壁画名称</div>
-                <div className="restoration-summary-value">{selectedMural.name}</div>
+            {selectedMural ? (
+              <div className="restoration-summary">
+                <div className="restoration-summary-item">
+                  <div className="restoration-summary-label">壁画名称</div>
+                  <div className="restoration-summary-value">{selectedMural.name}</div>
+                </div>
+                <div className="restoration-summary-item">
+                  <div className="restoration-summary-label">所属朝代</div>
+                  <div className="restoration-summary-value">{selectedMural.era}</div>
+                </div>
+                <div className="restoration-summary-item">
+                  <div className="restoration-summary-label">出土地 / 地点</div>
+                  <div className="restoration-summary-value">{selectedMural.site}</div>
+                </div>
+                <div className="restoration-summary-item">
+                  <div className="restoration-summary-label">当前状态</div>
+                  <div className="restoration-summary-value">{MURAL_STATUS_MAP[selectedMural.status]}</div>
+                </div>
               </div>
-              <div className="restoration-summary-item">
-                <div className="restoration-summary-label">所属朝代</div>
-                <div className="restoration-summary-value">{selectedMural.era}</div>
+            ) : (
+              <Empty description="请选择要进入修复工作台的壁画" />
+            )}
+          </div>
+
+          {selectedMuralId && (
+            <div className="restoration-history-panel">
+              <div className="restoration-history-header">
+                <div>
+                  <Text strong>最近修复记录</Text>
+                  <div>
+                    <Text type="secondary">
+                      按创建时间展示；重新选择壁画或刷新后会优先恢复上次查看的修复记录。
+                    </Text>
+                  </div>
+                </div>
+                {historyLoading ? (
+                  <Tag color="processing">加载中</Tag>
+                ) : (
+                  <Text type="secondary">{runHistory.length} 条</Text>
+                )}
               </div>
-              <div className="restoration-summary-item">
-                <div className="restoration-summary-label">出土地 / 地点</div>
-                <div className="restoration-summary-value">{selectedMural.site}</div>
-              </div>
-              <div className="restoration-summary-item">
-                <div className="restoration-summary-label">当前状态</div>
-                <div className="restoration-summary-value">{MURAL_STATUS_MAP[selectedMural.status]}</div>
-              </div>
+
+              {historyLoading ? (
+                <Text type="secondary">正在加载该壁画的修复记录...</Text>
+              ) : runHistory.length > 0 ? (
+                <div className="restoration-history-list">
+                  {runHistory.map((run) => (
+                    <button
+                      key={run.id}
+                      type="button"
+                      className={run.id === activeRunId
+                        ? 'restoration-history-item restoration-history-item--active'
+                        : 'restoration-history-item'}
+                      onClick={() => void handleRestoreRun(run.id)}
+                      disabled={!!restoringRunId}
+                    >
+                      <div className="restoration-history-title-row">
+                        <Space size={[8, 8]} wrap>
+                          {run.id === activeRunId && <Tag color="magenta">当前</Tag>}
+                          <Tag color={run.mode === 'partial' ? 'volcano' : 'geekblue'}>
+                            {getModeLabel(run.mode)}
+                          </Tag>
+                          <Tag color={run.status === 'succeeded' ? 'green' : 'red'}>
+                            {run.status === 'succeeded' ? '已完成' : '失败'}
+                          </Tag>
+                          {run.committedResultId && <Tag color="cyan">已保存</Tag>}
+                          {restoringRunId === run.id && <Tag color="processing">恢复中</Tag>}
+                        </Space>
+                        <Text type="secondary">{new Date(run.createdAt).toLocaleString('zh-CN')}</Text>
+                      </div>
+                      <div className="restoration-history-meta">
+                        <span>{run.latestResultId ? `结果 ${run.latestResultId.slice(0, 8)}` : '尚无结果'}</span>
+                        <span>{run.annotationIds.length > 0 ? `标注 ${run.annotationIds.length} 条` : '无病害标注'}</span>
+                        <span>{run.manualSelection ? '含手动选区' : '无手动选区'}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="当前壁画还没有修复记录"
+                />
+              )}
             </div>
-          ) : (
-            <Empty description="请选择要进入修复工作台的壁画" />
           )}
         </div>
       </Card>
@@ -447,7 +675,9 @@ export default function RestorationPage() {
           className="restoration-card"
           title="结果区"
           extra={currentResult
-            ? <Tag color={currentResult.isMock ? 'gold' : 'green'}>{currentResult.isMock ? '演示模式' : '真实生成'}</Tag>
+            ? <Tag color={currentResult.committedMuralImageId ? 'cyan' : currentResult.isMock ? 'gold' : 'green'}>
+              {currentResult.committedMuralImageId ? '已保存' : currentResult.isMock ? '服务端 Mock' : '真实生成'}
+            </Tag>
             : null}
         >
           {currentResult ? (
@@ -475,20 +705,20 @@ export default function RestorationPage() {
       <div className="restoration-actions">
         <Button
           type="primary"
-          disabled={!!startDisabledReason}
+          disabled={!!startDisabledReason || !!restoringRunId}
           loading={generating}
           onClick={() => void handleGenerate()}
         >
           开始修复
         </Button>
         <Button
-          disabled={!currentResult || generating}
+          disabled={!currentResult || generating || !!restoringRunId}
           onClick={() => void handleGenerate(currentResult)}
         >
           再次生成变体
         </Button>
         <Button
-          disabled={!currentResult}
+          disabled={!currentResult || !!currentResult.committedMuralImageId || !!restoringRunId}
           loading={saving}
           onClick={() => void handleSave()}
         >
