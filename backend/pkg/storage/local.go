@@ -42,6 +42,11 @@ func (s *LocalStorage) FullPath(relPath string) string {
 	return filepath.Join(s.baseDir, relPath)
 }
 
+// Read 读取相对路径文件内容
+func (s *LocalStorage) Read(relPath string) ([]byte, error) {
+	return os.ReadFile(filepath.Join(s.baseDir, relPath))
+}
+
 // BaseDir 返回存储根目录
 func (s *LocalStorage) BaseDir() string {
 	return s.baseDir

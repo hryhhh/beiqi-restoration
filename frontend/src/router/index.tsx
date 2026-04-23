@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom';
 import MainLayout from '@/layouts/MainLayout';
 import AuthLayout from '@/layouts/AuthLayout';
+import { RESTORATION_ROLES } from '@/policies/roles';
 import ProtectedRoute from './ProtectedRoute';
 import LoginPage from '@/pages/auth/LoginPage';
 
@@ -111,7 +112,7 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    element: <ProtectedRoute roles={['admin', 'chief_restorer', 'assistant', 'researcher']} />,
+    element: <ProtectedRoute roles={RESTORATION_ROLES} />,
     children: [
       {
         element: <MainLayout />,

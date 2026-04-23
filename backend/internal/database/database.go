@@ -33,6 +33,8 @@ func Init(cfg *config.DatabaseConfig) *gorm.DB {
 		&model.RestorationPlan{},
 		&model.PlanReview{},
 		&model.PlanStatusChange{},
+		&model.RestorationRun{},
+		&model.RestorationResult{},
 		&model.KnowledgeDoc{},
 		&model.AuditLog{},
 	); err != nil {

@@ -1,5 +1,12 @@
 import type { AnnotationCoordinates } from '@/types';
 
+export interface CoordinateBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
 /**
  * 将坐标裁剪到 [0, 1] 范围内（原地修改）
  * 对标后端 domain/geometry.go 的 ClampCoordinates
@@ -42,20 +49,34 @@ export function areaPercent(area: number): number {
   return area * 100;
 }
 
-export function getCoordinateBounds(points: number[][]) {
-  const xs = points.map((point) => point[0]);
-  const ys = points.map((point) => point[1]);
+export function getCoordinateBounds(points: number[][]): CoordinateBounds | null {
+  if (points.length === 0) return null;
 
-  return {
-    minX: Math.min(...xs),
-    minY: Math.min(...ys),
-    maxX: Math.max(...xs),
-    maxY: Math.max(...ys),
-  };
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  for (const point of points) {
+    if (point.length < 2) continue;
+    minX = Math.min(minX, point[0]);
+    minY = Math.min(minY, point[1]);
+    maxX = Math.max(maxX, point[0]);
+    maxY = Math.max(maxY, point[1]);
+  }
+
+  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+    return null;
+  }
+
+  return { minX, minY, maxX, maxY };
 }
 
 export async function imageUrlToFile(imageUrl: string, filename: string): Promise<File> {
   const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.status}`);
+  }
   const blob = await response.blob();
   return new File([blob], filename, { type: blob.type || 'image/png' });
 }
