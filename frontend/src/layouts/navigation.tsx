@@ -9,10 +9,10 @@ import {
   ToolOutlined,
 } from '@ant-design/icons';
 import type { UserRole } from '@/types';
+import { RESTORATION_ROLES } from '@/policies/roles';
 
 export type NavigationItem = NonNullable<MenuProps['items']>[number];
 
-const RESTORATION_ROLES: UserRole[] = ['admin', 'chief_restorer', 'assistant', 'researcher'];
 const PREFIX_KEYS = ['/dashboard', '/murals', '/projects', '/plans', '/analysis', '/knowledge', '/restoration', '/admin'];
 
 export function canAccessRestoration(role?: UserRole | null): boolean {
