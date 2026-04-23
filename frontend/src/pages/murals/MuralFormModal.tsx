@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Modal, Form, Input, Select, App } from 'antd';
+import type { CreateMuralPayload, UpdateMuralPayload } from '@/api/mural';
 import { createMural, updateMural } from '@/api/mural';
 import { MURAL_STATUS_MAP } from '@/constants';
 import type { MuralRecord } from '@/types';
@@ -12,10 +13,12 @@ interface Props {
   onSuccess: () => void;
 }
 
+type MuralFormValues = CreateMuralPayload & Pick<UpdateMuralPayload, 'status'>;
+
 /** 壁画创建/编辑弹窗 */
 export default function MuralFormModal({ open, mural, onClose, onSuccess }: Props) {
   const { message } = App.useApp();
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<MuralFormValues>();
   const [loading, setLoading] = useState(false);
   const isEdit = !!mural;
 
@@ -47,7 +50,7 @@ export default function MuralFormModal({ open, mural, onClose, onSuccess }: Prop
       onCancel={onClose}
       confirmLoading={loading}
       destroyOnHidden
-      width={560}
+      width={720}
     >
       <Form
         form={form}
@@ -56,6 +59,10 @@ export default function MuralFormModal({ open, mural, onClose, onSuccess }: Prop
           name: mural.name, era: mural.era, site: mural.site,
           material: mural.material, tombLocation: mural.tombLocation,
           dimensions: mural.dimensions, description: mural.description,
+          popularIntroduction: mural.popularIntroduction,
+          historicalBackground: mural.historicalBackground,
+          artisticFeatures: mural.artisticFeatures,
+          culturalSignificance: mural.culturalSignificance,
           status: mural.status, healthIndex: mural.healthIndex,
         } : { status: 'registered' }}
         className="mt-4"
@@ -92,6 +99,23 @@ export default function MuralFormModal({ open, mural, onClose, onSuccess }: Prop
         <Form.Item name="description" label="描述">
           <Input.TextArea rows={3} placeholder="壁画内容描述..." />
         </Form.Item>
+        <div className="rounded-2xl border border-[#d9c6b4] bg-[rgba(255,248,238,0.78)] p-4">
+          <div className="mb-3 text-sm font-medium text-[#8b3a2f]">修复成果信息</div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Form.Item name="popularIntroduction" label="通俗化介绍" className="mb-0">
+              <Input.TextArea rows={4} placeholder="面向公众的简明介绍..." />
+            </Form.Item>
+            <Form.Item name="historicalBackground" label="历史背景" className="mb-0">
+              <Input.TextArea rows={4} placeholder="补充年代、墓葬与发现背景..." />
+            </Form.Item>
+            <Form.Item name="artisticFeatures" label="艺术特点" className="mb-0">
+              <Input.TextArea rows={4} placeholder="记录构图、设色、人物与技法亮点..." />
+            </Form.Item>
+            <Form.Item name="culturalSignificance" label="文化意义" className="mb-0">
+              <Input.TextArea rows={4} placeholder="概括其礼制、历史与文化价值..." />
+            </Form.Item>
+          </div>
+        </div>
       </Form>
     </Modal>
   );

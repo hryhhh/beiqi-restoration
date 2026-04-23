@@ -1,5 +1,5 @@
 import { del, get, post, put } from './request';
-import type { AssetType, MuralAsset, MuralHistory, MuralRecord, PaginatedResponse } from '@/types';
+import type { AssetType, MuralAsset, MuralHistory, MuralRecord, MuralStatus, PaginatedResponse } from '@/types';
 
 export interface MuralListParams {
   page?: number;
@@ -11,12 +11,14 @@ export interface MuralListParams {
   status?: string;
 }
 
-export const getMurals = (params?: MuralListParams) =>
-  get<PaginatedResponse<MuralRecord>>('/murals', params as Record<string, unknown>);
+export interface MuralShowcasePayload {
+  popularIntroduction?: string;
+  historicalBackground?: string;
+  artisticFeatures?: string;
+  culturalSignificance?: string;
+}
 
-export const getMural = (id: string) => get<MuralRecord>(`/murals/${id}`);
-
-export const createMural = (data: {
+export interface CreateMuralPayload extends MuralShowcasePayload {
   name: string;
   era: string;
   site: string;
@@ -24,9 +26,20 @@ export const createMural = (data: {
   tombLocation?: string;
   dimensions?: string;
   description?: string;
-}) => post<MuralRecord>('/murals', data);
+}
 
-export const updateMural = (id: string, data: Record<string, unknown>) =>
+export interface UpdateMuralPayload extends Partial<CreateMuralPayload> {
+  status?: MuralStatus;
+}
+
+export const getMurals = (params?: MuralListParams) =>
+  get<PaginatedResponse<MuralRecord>>('/murals', params as Record<string, unknown>);
+
+export const getMural = (id: string) => get<MuralRecord>(`/murals/${id}`);
+
+export const createMural = (data: CreateMuralPayload) => post<MuralRecord>('/murals', data);
+
+export const updateMural = (id: string, data: UpdateMuralPayload) =>
   put<MuralRecord>(`/murals/${id}`, data);
 
 export const getMuralHistory = (id: string) => get<MuralHistory[]>(`/murals/${id}/history`);

@@ -3,6 +3,7 @@ package handler
 import (
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hry/beiqi-mural-guardian/backend/internal/model"
@@ -25,23 +26,31 @@ func NewMuralHandler(svc *service.MuralService, db *gorm.DB, store *storage.Loca
 }
 
 type createMuralReq struct {
-	Name         string  `json:"name" binding:"required"`
-	Era          string  `json:"era" binding:"required"`
-	Site         string  `json:"site" binding:"required"`
-	Material     string  `json:"material" binding:"required"`
-	TombLocation *string `json:"tombLocation"`
-	Dimensions   *string `json:"dimensions"`
-	Description  *string `json:"description"`
+	Name                 string  `json:"name" binding:"required"`
+	Era                  string  `json:"era" binding:"required"`
+	Site                 string  `json:"site" binding:"required"`
+	Material             string  `json:"material" binding:"required"`
+	TombLocation         *string `json:"tombLocation"`
+	Dimensions           *string `json:"dimensions"`
+	Description          *string `json:"description"`
+	PopularIntroduction  *string `json:"popularIntroduction"`
+	HistoricalBackground *string `json:"historicalBackground"`
+	ArtisticFeatures     *string `json:"artisticFeatures"`
+	CulturalSignificance *string `json:"culturalSignificance"`
 }
 
 type updateMuralReq struct {
-	Name         *string `json:"name"`
-	Era          *string `json:"era"`
-	Site         *string `json:"site"`
-	Material     *string `json:"material"`
-	TombLocation *string `json:"tombLocation"`
-	Description  *string `json:"description"`
-	Status       *string `json:"status"`
+	Name                 *string `json:"name"`
+	Era                  *string `json:"era"`
+	Site                 *string `json:"site"`
+	Material             *string `json:"material"`
+	TombLocation         *string `json:"tombLocation"`
+	Description          *string `json:"description"`
+	Status               *string `json:"status"`
+	PopularIntroduction  *string `json:"popularIntroduction"`
+	HistoricalBackground *string `json:"historicalBackground"`
+	ArtisticFeatures     *string `json:"artisticFeatures"`
+	CulturalSignificance *string `json:"culturalSignificance"`
 }
 
 func (h *MuralHandler) Create(c *gin.Context) {
@@ -52,13 +61,17 @@ func (h *MuralHandler) Create(c *gin.Context) {
 	}
 
 	m := &model.Mural{
-		Name:         req.Name,
-		Era:          req.Era,
-		Site:         req.Site,
-		Material:     req.Material,
-		TombLocation: req.TombLocation,
-		Dimensions:   req.Dimensions,
-		Description:  req.Description,
+		Name:                 req.Name,
+		Era:                  req.Era,
+		Site:                 req.Site,
+		Material:             req.Material,
+		TombLocation:         normalizeOptionalText(req.TombLocation),
+		Dimensions:           normalizeOptionalText(req.Dimensions),
+		Description:          normalizeOptionalText(req.Description),
+		PopularIntroduction:  normalizeOptionalText(req.PopularIntroduction),
+		HistoricalBackground: normalizeOptionalText(req.HistoricalBackground),
+		ArtisticFeatures:     normalizeOptionalText(req.ArtisticFeatures),
+		CulturalSignificance: normalizeOptionalText(req.CulturalSignificance),
 	}
 	if err := h.svc.Create(m); err != nil {
 		response.ServerError(c)
@@ -96,15 +109,15 @@ func (h *MuralHandler) Update(c *gin.Context) {
 	if req.Material != nil {
 		updates["material"] = *req.Material
 	}
-	if req.TombLocation != nil {
-		updates["tombLocation"] = *req.TombLocation
-	}
-	if req.Description != nil {
-		updates["description"] = *req.Description
-	}
+	setOptionalTextUpdate(updates, "tombLocation", req.TombLocation)
+	setOptionalTextUpdate(updates, "description", req.Description)
 	if req.Status != nil {
 		updates["status"] = *req.Status
 	}
+	setOptionalTextUpdate(updates, "popularIntroduction", req.PopularIntroduction)
+	setOptionalTextUpdate(updates, "historicalBackground", req.HistoricalBackground)
+	setOptionalTextUpdate(updates, "artisticFeatures", req.ArtisticFeatures)
+	setOptionalTextUpdate(updates, "culturalSignificance", req.CulturalSignificance)
 
 	changedBy := resolveChangedBy(c, h.db)
 	m, err := h.svc.Update(c.Param("id"), updates, changedBy)
@@ -258,4 +271,31 @@ func collectMuralAssetPaths(assets []model.MuralAsset) []string {
 		}
 	}
 	return paths
+}
+
+func normalizeOptionalText(value *string) *string {
+	if value == nil {
+		return nil
+	}
+
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil
+	}
+
+	return &trimmed
+}
+
+func setOptionalTextUpdate(updates map[string]interface{}, field string, value *string) {
+	if value == nil {
+		return
+	}
+
+	normalized := normalizeOptionalText(value)
+	if normalized == nil {
+		updates[field] = nil
+		return
+	}
+
+	updates[field] = *normalized
 }

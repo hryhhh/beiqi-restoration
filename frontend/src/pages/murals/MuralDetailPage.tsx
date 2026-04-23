@@ -63,6 +63,10 @@ function formatHistoryField(field: string) {
     material: '材质',
     description: '描述',
     tombLocation: '墓葬位置',
+    popularIntroduction: '通俗化介绍',
+    historicalBackground: '历史背景',
+    artisticFeatures: '艺术特点',
+    culturalSignificance: '文化意义',
     status: '状态',
     名称: '名称',
     年代: '年代',
@@ -70,6 +74,10 @@ function formatHistoryField(field: string) {
     材质: '材质',
     描述: '描述',
     墓葬位置: '墓葬位置',
+    通俗化介绍: '通俗化介绍',
+    历史背景: '历史背景',
+    艺术特点: '艺术特点',
+    文化意义: '文化意义',
     状态: '状态',
   };
 
@@ -116,8 +124,6 @@ export default function MuralDetailPage() {
   const [geometryDraft, setGeometryDraft] = useState<AnnotationCoordinates | null>(null);
 
   const anno = useAnnotation(id || '');
-  void formatHistoryField;
-  void formatHistoryValue;
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -207,6 +213,12 @@ export default function MuralDetailPage() {
   const activeImage = mural.images.find((img) => img.imageType === anno.activeLayer) || mural.images[0];
   const severeCount = anno.annotations.filter((item) => item.severity >= 4).length;
   const describedCount = anno.annotations.filter((item) => item.description?.trim()).length;
+  const showcaseFields = [
+    { key: 'popularIntroduction', label: '通俗化介绍', value: mural.popularIntroduction },
+    { key: 'historicalBackground', label: '历史背景', value: mural.historicalBackground },
+    { key: 'artisticFeatures', label: '艺术特点', value: mural.artisticFeatures },
+    { key: 'culturalSignificance', label: '文化意义', value: mural.culturalSignificance },
+  ];
 
   if (loading) {
     return (
@@ -309,19 +321,37 @@ export default function MuralDetailPage() {
             key: 'info',
             label: '基本信息',
             children: (
-              <Descriptions column={2} bordered size="small">
-                <Descriptions.Item label="年代">{mural.era}</Descriptions.Item>
-                <Descriptions.Item label="出土地点">{mural.site}</Descriptions.Item>
-                <Descriptions.Item label="材质">{mural.material}</Descriptions.Item>
-                <Descriptions.Item label="墓葬位置">{mural.tombLocation || '-'}</Descriptions.Item>
-                <Descriptions.Item label="尺寸">{mural.dimensions || '-'}</Descriptions.Item>
-                <Descriptions.Item label="健康指数">
-                  {mural.healthIndex != null ? `${mural.healthIndex}%` : '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label="描述" span={2}>
-                  {mural.description || '-'}
-                </Descriptions.Item>
-              </Descriptions>
+              <div className="space-y-4">
+                <Descriptions column={2} bordered size="small">
+                  <Descriptions.Item label="年代">{mural.era}</Descriptions.Item>
+                  <Descriptions.Item label="出土地点">{mural.site}</Descriptions.Item>
+                  <Descriptions.Item label="材质">{mural.material}</Descriptions.Item>
+                  <Descriptions.Item label="墓葬位置">{mural.tombLocation || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="尺寸">{mural.dimensions || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="健康指数">
+                    {mural.healthIndex != null ? `${mural.healthIndex}%` : '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="描述" span={2}>
+                    {mural.description || '-'}
+                  </Descriptions.Item>
+                </Descriptions>
+                <div>
+                  <div className="mb-3 text-sm font-medium text-[#8b3a2f]">修复成果信息</div>
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    {showcaseFields.map((item) => (
+                      <div
+                        key={item.key}
+                        className="rounded-2xl border border-[#d9c6b4] bg-[rgba(255,248,238,0.78)] p-4"
+                      >
+                        <div className="mb-2 text-sm font-medium text-[#8b3a2f]">{item.label}</div>
+                        <div className="min-h-20 whitespace-pre-wrap text-sm leading-7 text-text-secondary">
+                          {item.value?.trim() || '暂无内容'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             ),
           },
           {
@@ -542,10 +572,18 @@ export default function MuralDetailPage() {
                 items={history.map((record) => ({
                   children: (
                     <div className="text-sm">
-                      <span className="font-medium">修改字段：{record.field}</span>
+                      <span className="font-medium">修改字段：{formatHistoryField(record.field)}</span>
                       <div className="text-text-secondary mt-1">
-                        {record.oldValue && <span className="line-through mr-2">{record.oldValue}</span>}
-                        {record.newValue && <span className="text-primary">{record.newValue}</span>}
+                        {formatHistoryValue(record.field, record.oldValue) && (
+                          <span className="line-through mr-2">
+                            {formatHistoryValue(record.field, record.oldValue)}
+                          </span>
+                        )}
+                        {formatHistoryValue(record.field, record.newValue) && (
+                          <span className="text-primary">
+                            {formatHistoryValue(record.field, record.newValue)}
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-text-secondary mt-1">
                         {new Date(record.changedAt).toLocaleString('zh-CN')} · {record.changedBy}

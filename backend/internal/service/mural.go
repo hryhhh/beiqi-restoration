@@ -61,12 +61,22 @@ func (s *MuralService) Update(id string, updates map[string]interface{}, changed
 		existing.Material = value.(string)
 	}
 	if value, ok := updates["description"]; ok {
-		text := value.(string)
-		existing.Description = &text
+		existing.Description = optionalStringPointer(value)
 	}
 	if value, ok := updates["tombLocation"]; ok {
-		text := value.(string)
-		existing.TombLocation = &text
+		existing.TombLocation = optionalStringPointer(value)
+	}
+	if value, ok := updates["popularIntroduction"]; ok {
+		existing.PopularIntroduction = optionalStringPointer(value)
+	}
+	if value, ok := updates["historicalBackground"]; ok {
+		existing.HistoricalBackground = optionalStringPointer(value)
+	}
+	if value, ok := updates["artisticFeatures"]; ok {
+		existing.ArtisticFeatures = optionalStringPointer(value)
+	}
+	if value, ok := updates["culturalSignificance"]; ok {
+		existing.CulturalSignificance = optionalStringPointer(value)
 	}
 	if value, ok := updates["status"]; ok {
 		existing.Status = model.MuralStatus(value.(string))
@@ -86,13 +96,17 @@ func (s *MuralService) GetHistory(muralID string) ([]model.MuralHistory, error) 
 func getFieldValue(mural *model.Mural, field string) interface{} {
 	value := reflect.ValueOf(mural).Elem()
 	fieldMap := map[string]string{
-		"name":         "Name",
-		"era":          "Era",
-		"site":         "Site",
-		"material":     "Material",
-		"description":  "Description",
-		"tombLocation": "TombLocation",
-		"status":       "Status",
+		"name":                 "Name",
+		"era":                  "Era",
+		"site":                 "Site",
+		"material":             "Material",
+		"description":          "Description",
+		"tombLocation":         "TombLocation",
+		"popularIntroduction":  "PopularIntroduction",
+		"historicalBackground": "HistoricalBackground",
+		"artisticFeatures":     "ArtisticFeatures",
+		"culturalSignificance": "CulturalSignificance",
+		"status":               "Status",
 	}
 
 	goField, ok := fieldMap[field]
@@ -129,13 +143,17 @@ func normalizeHistoryValue(value interface{}) string {
 
 func historyFieldLabel(field string) string {
 	fieldMap := map[string]string{
-		"name":         "名称",
-		"era":          "年代",
-		"site":         "地点",
-		"material":     "材质",
-		"description":  "描述",
-		"tombLocation": "墓葬位置",
-		"status":       "状态",
+		"name":                 "名称",
+		"era":                  "年代",
+		"site":                 "地点",
+		"material":             "材质",
+		"description":          "描述",
+		"tombLocation":         "墓葬位置",
+		"popularIntroduction":  "通俗化介绍",
+		"historicalBackground": "历史背景",
+		"artisticFeatures":     "艺术特点",
+		"culturalSignificance": "文化意义",
+		"status":               "状态",
 	}
 	if label, ok := fieldMap[field]; ok {
 		return label
@@ -149,4 +167,8 @@ func stringPointer(value string) *string {
 	}
 	copyValue := value
 	return &copyValue
+}
+
+func optionalStringPointer(value interface{}) *string {
+	return stringPointer(normalizeHistoryValue(value))
 }
