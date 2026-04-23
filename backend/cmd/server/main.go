@@ -148,6 +148,19 @@ func main() {
 		analysis.POST("/report", analysisHandler.Report)
 	}
 
+	// 壁画修复工作台模块
+	restorationRepo := repository.NewRestorationRepository(db)
+	restorationProvider := service.NewRestorationProvider(&cfg.Restoration)
+	restorationSvc := service.NewRestorationService(restorationRepo, restorationProvider, store)
+	restorationHandler := handler.NewRestorationHandler(restorationSvc)
+	restoration := api.Group("/restoration").Use(middleware.RequireRoles(middleware.RestorationWorkbenchRoles()...))
+	{
+		restoration.GET("/runs", restorationHandler.ListRuns)
+		restoration.POST("/runs", restorationHandler.CreateRun)
+		restoration.GET("/runs/:id", restorationHandler.GetRun)
+		restoration.POST("/runs/:id/variants", restorationHandler.CreateVariant)
+	}
+
 	// 知识库模块
 	knowledgeRepo := repository.NewKnowledgeRepository(db)
 	knowledgeSvc := service.NewKnowledgeService(knowledgeRepo)
