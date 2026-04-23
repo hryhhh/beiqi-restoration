@@ -12,7 +12,7 @@ var (
 		model.RoleChiefRestorer,
 	}
 
-	muralImageUploadRoles = [...]model.UserRole{
+	restorationWorkbenchRoles = [...]model.UserRole{
 		model.RoleAdmin,
 		model.RoleChiefRestorer,
 		model.RoleAssistant,
@@ -39,8 +39,12 @@ func MuralManageRoles() []model.UserRole {
 	return append([]model.UserRole(nil), muralManageRoles[:]...)
 }
 
+func RestorationWorkbenchRoles() []model.UserRole {
+	return append([]model.UserRole(nil), restorationWorkbenchRoles[:]...)
+}
+
 func MuralImageUploadRoles() []model.UserRole {
-	return append([]model.UserRole(nil), muralImageUploadRoles[:]...)
+	return RestorationWorkbenchRoles()
 }
 
 func PlanReviewRoles() []model.UserRole {
@@ -52,5 +56,5 @@ func AnnotationWriteRoles() []model.UserRole {
 }
 
 func RestorationImageUploadRoles() []model.UserRole {
-	return MuralImageUploadRoles()
+	return RestorationWorkbenchRoles()
 }

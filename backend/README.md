@@ -88,6 +88,10 @@ cp .env.example .env
 | `UPLOAD_DIR` | 文件上传目录，建议生产环境使用绝对路径 |
 | `MAX_UPLOAD_SIZE` | 单文件最大上传限制 |
 | `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | 知识库问答所需大模型配置 |
+| `RESTORATION_PROVIDER` | 修复生成 provider，当前支持 `mock` / `http` |
+| `RESTORATION_BASE_URL` / `RESTORATION_API_KEY` / `RESTORATION_MODEL` | 外部修复服务配置 |
+| `RESTORATION_TIMEOUT_SECONDS` | 修复请求超时时间 |
+| `RESTORATION_ALLOW_MOCK_FALLBACK` | 真实 provider 失败时是否允许降级到服务端 mock |
 
 如果不配置 `LLM_*` 变量，知识库问答会自动降级为检索摘要模式。
 
@@ -146,6 +150,8 @@ PGPASSWORD=beiqi123 psql -h localhost -p 5432 -U beiqi -d beiqi_mural -f scripts
 | `/api/analysis` | 检测、确认、报告 |
 | `/api/knowledge` | 文档、搜索、问答 |
 | `/api/admin` | 用户、日志、备份、导出 |
+
+Phase 2 将新增 `/api/restoration` 路由组，用于修复工作台的 run / result / commit 流程。
 
 知识库问答：
 
@@ -229,6 +235,15 @@ make install-air
 ### 图像分析接口返回不可用
 
 当前 `cmd/server/main.go` 中未注入真实 AI 检测器，`/api/analysis/detect` 默认不会返回真实识别结果。这不是数据库或网络故障，而是当前版本的既定实现状态。
+
+### 修复工作台 provider 一直在走 mock
+
+优先检查：
+
+- `RESTORATION_PROVIDER`
+- `RESTORATION_BASE_URL`
+- `RESTORATION_API_KEY`
+- `RESTORATION_ALLOW_MOCK_FALLBACK`
 
 ## 贡献指南 / Contributing
 
