@@ -28,12 +28,12 @@ export function buildMenuItems(role?: UserRole | null): NavigationItem[] {
   return [
     { key: '/dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
     { key: '/murals', icon: <PictureOutlined />, label: '壁画库' },
-    { key: '/showcase', icon: <AppstoreOutlined />, label: '修复成果' },
+    { key: '/showcase', icon: <AppstoreOutlined />, label: '成果展示' },
     { key: '/projects', icon: <ToolOutlined />, label: '修复项目' },
     { key: '/plans', icon: <SolutionOutlined />, label: '修复方案' },
     { key: '/analysis', icon: <ExperimentOutlined />, label: '图像分析' },
     ...(canAccessRestoration(role)
-      ? [{ key: '/restoration', icon: <ExperimentOutlined />, label: '壁画修复' }]
+      ? [{ key: '/restoration', icon: <ExperimentOutlined />, label: '工作台' }]
       : []),
     { key: '/knowledge', icon: <BookOutlined />, label: '知识库' },
     ...(role === 'admin'
