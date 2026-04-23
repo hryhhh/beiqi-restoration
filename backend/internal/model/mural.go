@@ -15,20 +15,24 @@ const (
 
 // Mural 壁画记录
 type Mural struct {
-	ID             string      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	Name           string      `gorm:"not null" json:"name"`
-	Era            string      `gorm:"not null" json:"era"`
-	Site           string      `gorm:"not null" json:"site"`
-	Material       string      `gorm:"not null" json:"material"`
-	TombLocation   *string     `json:"tombLocation"`
-	ExcavationDate *time.Time  `json:"excavationDate"`
-	Dimensions     *string     `json:"dimensions"`
-	Description    *string     `json:"description"`
-	Status         MuralStatus `gorm:"type:varchar(20);default:'registered'" json:"status"`
-	HealthIndex    *float64    `json:"healthIndex"`
-	IsFeatured     bool        `gorm:"default:false" json:"isFeatured"`
-	CreatedAt      time.Time   `json:"createdAt"`
-	UpdatedAt      time.Time   `json:"updatedAt"`
+	ID                   string      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Name                 string      `gorm:"not null" json:"name"`
+	Era                  string      `gorm:"not null" json:"era"`
+	Site                 string      `gorm:"not null" json:"site"`
+	Material             string      `gorm:"not null" json:"material"`
+	TombLocation         *string     `json:"tombLocation"`
+	ExcavationDate       *time.Time  `json:"excavationDate"`
+	Dimensions           *string     `json:"dimensions"`
+	Description          *string     `json:"description"`
+	PopularIntroduction  *string     `json:"popularIntroduction"`
+	HistoricalBackground *string     `json:"historicalBackground"`
+	ArtisticFeatures     *string     `json:"artisticFeatures"`
+	CulturalSignificance *string     `json:"culturalSignificance"`
+	Status               MuralStatus `gorm:"type:varchar(20);default:'registered'" json:"status"`
+	HealthIndex          *float64    `json:"healthIndex"`
+	IsFeatured           bool        `gorm:"default:false" json:"isFeatured"`
+	CreatedAt            time.Time   `json:"createdAt"`
+	UpdatedAt            time.Time   `json:"updatedAt"`
 
 	Images      []MuralImage       `gorm:"foreignKey:MuralID" json:"images,omitempty"`
 	Assets      []MuralAsset       `gorm:"foreignKey:MuralID" json:"assets,omitempty"`

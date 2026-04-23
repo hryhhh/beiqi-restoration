@@ -8,20 +8,24 @@ import (
 
 // MuralJSON 壁画记录的 JSON 序列化结构
 type MuralJSON struct {
-	ID             string     `json:"id"`
-	Name           string     `json:"name"`
-	Era            string     `json:"era"`
-	Site           string     `json:"site"`
-	Material       string     `json:"material"`
-	TombLocation   *string    `json:"tombLocation"`
-	ExcavationDate *time.Time `json:"excavationDate"`
-	Dimensions     *string    `json:"dimensions"`
-	Description    *string    `json:"description"`
-	Status         string     `json:"status"`
-	HealthIndex    *float64   `json:"healthIndex"`
-	IsFeatured     bool       `json:"isFeatured"`
-	CreatedAt      time.Time  `json:"createdAt"`
-	UpdatedAt      time.Time  `json:"updatedAt"`
+	ID                   string     `json:"id"`
+	Name                 string     `json:"name"`
+	Era                  string     `json:"era"`
+	Site                 string     `json:"site"`
+	Material             string     `json:"material"`
+	TombLocation         *string    `json:"tombLocation"`
+	ExcavationDate       *time.Time `json:"excavationDate"`
+	Dimensions           *string    `json:"dimensions"`
+	Description          *string    `json:"description"`
+	PopularIntroduction  *string    `json:"popularIntroduction"`
+	HistoricalBackground *string    `json:"historicalBackground"`
+	ArtisticFeatures     *string    `json:"artisticFeatures"`
+	CulturalSignificance *string    `json:"culturalSignificance"`
+	Status               string     `json:"status"`
+	HealthIndex          *float64   `json:"healthIndex"`
+	IsFeatured           bool       `json:"isFeatured"`
+	CreatedAt            time.Time  `json:"createdAt"`
+	UpdatedAt            time.Time  `json:"updatedAt"`
 }
 
 // SerializeMural 将壁画记录序列化为 JSON 字符串

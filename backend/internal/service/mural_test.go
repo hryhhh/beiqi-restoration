@@ -54,8 +54,49 @@ func TestProperty13_FieldValueExtraction(t *testing.T) {
 			val := getFieldValue(m, field)
 			return val == "" || val == model.MuralStatus("")
 		},
-		gen.OneConstOf("description", "tombLocation"),
+		gen.OneConstOf(
+			"description",
+			"tombLocation",
+			"popularIntroduction",
+			"historicalBackground",
+			"artisticFeatures",
+			"culturalSignificance",
+		),
 	))
 
 	properties.TestingRun(t)
+}
+
+func TestShowcaseFieldMetadata(t *testing.T) {
+	popular := "墓主人出行图景"
+	m := &model.Mural{
+		PopularIntroduction: &popular,
+	}
+
+	if got := getFieldValue(m, "popularIntroduction"); got != popular {
+		t.Fatalf("popularIntroduction = %v, want %q", got, popular)
+	}
+
+	for _, field := range []string{
+		"popularIntroduction",
+		"historicalBackground",
+		"artisticFeatures",
+		"culturalSignificance",
+	} {
+		if got := normalizeHistoryValue(getFieldValue(&model.Mural{}, field)); got != "" {
+			t.Fatalf("%s should normalize to empty history value, got %q", field, got)
+		}
+	}
+
+	expectedLabels := map[string]string{
+		"popularIntroduction":  "通俗化介绍",
+		"historicalBackground": "历史背景",
+		"artisticFeatures":     "艺术特点",
+		"culturalSignificance": "文化意义",
+	}
+	for field, want := range expectedLabels {
+		if got := historyFieldLabel(field); got != want {
+			t.Fatalf("%s label = %q, want %q", field, got, want)
+		}
+	}
 }

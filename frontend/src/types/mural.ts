@@ -45,6 +45,10 @@ export interface MuralRecord {
   excavationDate?: string;
   dimensions?: string;
   description?: string;
+  popularIntroduction?: string;
+  historicalBackground?: string;
+  artisticFeatures?: string;
+  culturalSignificance?: string;
   status: MuralStatus;
   healthIndex?: number;
   isFeatured: boolean;

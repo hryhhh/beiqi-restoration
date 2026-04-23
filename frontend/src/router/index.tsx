@@ -51,6 +51,20 @@ export const router = createBrowserRouter([
             },
           },
           {
+            path: '/showcase',
+            lazy: async () => {
+              const { default: C } = await import('@/pages/showcase/ShowcaseListPage');
+              return { Component: C };
+            },
+          },
+          {
+            path: '/showcase/:id',
+            lazy: async () => {
+              const { default: C } = await import('@/pages/showcase/ShowcaseDetailPage');
+              return { Component: C };
+            },
+          },
+          {
             path: '/projects',
             lazy: async () => {
               const { default: C } = await import('@/pages/projects/ProjectListPage');

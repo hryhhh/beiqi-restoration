@@ -37,10 +37,18 @@ func genValidMuralJSON() gopter.Gen {
 
 		hi := 50.0
 		now := time.Now().Truncate(time.Second)
+		popularIntroduction := "通俗化介绍"
+		historicalBackground := "历史背景"
+		artisticFeatures := "艺术特点"
+		culturalSignificance := "文化意义"
 		m := &MuralJSON{
 			ID: "test-id", Name: name, Era: era, Site: site, Material: material,
 			Status: "registered", HealthIndex: &hi, IsFeatured: false,
-			CreatedAt: now, UpdatedAt: now,
+			PopularIntroduction:  &popularIntroduction,
+			HistoricalBackground: &historicalBackground,
+			ArtisticFeatures:     &artisticFeatures,
+			CulturalSignificance: &culturalSignificance,
+			CreatedAt:            now, UpdatedAt: now,
 		}
 		return gopter.NewGenResult(m, gopter.NoShrinker)
 	}
@@ -66,6 +74,10 @@ func TestProperty1_MuralJSONRoundTrip(t *testing.T) {
 				m.Material == restored.Material &&
 				m.Status == restored.Status &&
 				m.IsFeatured == restored.IsFeatured &&
+				stringValue(m.PopularIntroduction) == stringValue(restored.PopularIntroduction) &&
+				stringValue(m.HistoricalBackground) == stringValue(restored.HistoricalBackground) &&
+				stringValue(m.ArtisticFeatures) == stringValue(restored.ArtisticFeatures) &&
+				stringValue(m.CulturalSignificance) == stringValue(restored.CulturalSignificance) &&
 				m.ID == restored.ID
 		},
 		genValidMuralJSON(),
@@ -132,4 +144,11 @@ func TestProperty4_InvalidJSONValidation(t *testing.T) {
 	))
 
 	properties.TestingRun(t)
+}
+
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }

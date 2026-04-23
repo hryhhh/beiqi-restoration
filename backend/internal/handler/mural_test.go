@@ -79,6 +79,22 @@ func TestProperty14_ImageHashConsistency(t *testing.T) {
 	properties.TestingRun(t)
 }
 
+func TestNormalizeOptionalText(t *testing.T) {
+	blank := "   "
+	if got := normalizeOptionalText(&blank); got != nil {
+		t.Fatalf("expected blank input to normalize to nil, got %v", *got)
+	}
+
+	text := "  北齐墓室壁画  "
+	got := normalizeOptionalText(&text)
+	if got == nil {
+		t.Fatal("expected non-blank input to remain non-nil")
+	}
+	if *got != "北齐墓室壁画" {
+		t.Fatalf("expected trimmed text, got %q", *got)
+	}
+}
+
 func readerFrom(s string) io.Reader {
 	return bytes.NewReader([]byte(s))
 }
