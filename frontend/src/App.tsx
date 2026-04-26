@@ -5,7 +5,7 @@ import zhCN from 'antd/locale/zh_CN';
 import { router } from '@/router';
 import { useAuthStore } from '@/stores/authStore';
 
-/** Ant Design 主题配置 */
+/** Ant Design 总主题配置 */
 const theme = {
   token: {
     colorPrimary: '#B5564A',
